@@ -22,18 +22,23 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                // Permitir acceso público a recursos estáticos
+                // IMPORTANTE: Permitir acceso a TODOS los recursos estáticos
                 .requestMatchers(
                         "/",
                         "/login",
                         "/usuarios/registro",
                         "/usuarios/registrar",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**",
-                        "/favicon.ico"
+                        "/css/**", // CSS
+                        "/js/**", // JavaScript
+                        "/images/**", // Imágenes
+                        "/static/**", // Ruta alternativa para recursos
+                        "/*.css", // CSS en raíz
+                        "/*.js", // JS en raíz
+                        "/webjars/**", // Librerías web
+                        "/favicon.ico", // Icono
+                        "/error" // Página de error
                 ).permitAll()
-                // Requerir autenticación para todo lo demás
+                // Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

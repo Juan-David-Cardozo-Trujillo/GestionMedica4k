@@ -1,4 +1,4 @@
-package com.gestion_medica.demo.Control;
+package com.gestion_medica.demo.control;
 
 import com.gestion_medica.demo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
