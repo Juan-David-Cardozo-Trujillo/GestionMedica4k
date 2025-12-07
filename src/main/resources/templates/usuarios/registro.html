@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - HIS+</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Registro de Nuevo Usuario</h2>
+        <form th:action="@{/usuarios/registrar}" th:object="${usuario}" method="post">
+            <div class="form-group">
+                <label for="idUsuario">ID Usuario:</label>
+                <input type="number" th:field="*{idUsuario}" required>
+            </div>
+            <div class="form-group">
+                <label for="nombreUsuario">Nombre de Usuario:</label>
+                <input type="text" th:field="*{nombreUsuario}" required>
+            </div>
+            <div class="form-group">
+                <label for="contrasenaEncriptada">Contraseña:</label>
+                <input type="password" th:field="*{contrasenaEncriptada}" required>
+            </div>
+            <div class="form-group">
+                <label for="numDocumento">Persona:</label>
+                <select th:field="*{numDocumento}" required>
+                    <option value="">Seleccione...</option>
+                    <option th:each="persona : ${personas}" 
+                            th:value="${persona.numDocumento}"
+                            th:text="${persona.nombrePersona + ' ' + persona.apellidoPersona}">
+                    </option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Registrar</button>
+            <a href="/" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>

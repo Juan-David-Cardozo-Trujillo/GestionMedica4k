@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Reportes y Analítica</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Reportes y Analítica</h2>
+        <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
+        <div class="reportes-grid">
+            <div class="reporte-card">
+                <h3>Medicamentos Más Recetados</h3>
+                <p>Por sede hospitalaria</p>
+                <a href="/reportes/medicamentos-recetados" class="btn btn-primary">Ver Reporte</a>
+            </div>
+            <div class="reporte-card">
+                <h3>Médicos con Más Consultas</h3>
+                <p>Por semana</p>
+                <a href="/reportes/medicos-consultas" class="btn btn-primary">Ver Reporte</a>
+            </div>
+            <div class="reporte-card">
+                <h3>Tiempo Promedio</h3>
+                <p>Cita - Diagnóstico</p>
+                <a href="/reportes/tiempo-promedio" class="btn btn-primary">Ver Reporte</a>
+            </div>
+            <div class="reporte-card">
+                <h3>Auditoría</h3>
+                <p>Historias Clínicas</p>
+                <a href="/reportes/auditoria" class="btn btn-primary">Ver Reporte</a>
+            </div>
+            <div class="reporte-card">
+                <h3>Departamentos</h3>
+                <p>Comparten Equipamiento</p>
+                <a href="/reportes/departamentos-equipamiento" class="btn btn-primary">Ver Reporte</a>
+            </div>
+            <div class="reporte-card">
+                <h3>Pacientes por Enfermedad</h3>
+                <p>Y Sede</p>
+                <a href="/reportes/pacientes-enfermedad" class="btn btn-primary">Ver Reporte</a>
+            </div>
+        </div>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/reports.js}"></script>
+</body>
+</html>

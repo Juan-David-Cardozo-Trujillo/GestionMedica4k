@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIS+ - Sistema Hospitalario</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema Integral de Gestión Hospitalaria Inteligente (HIS+)</h1>
+        </header>
+        <main>
+            <div class="welcome-section">
+                <h2>Bienvenido al Sistema HIS+</h2>
+                <p>Gestión integral de hospitales, clínicas y centros médicos</p>
+                <div class="action-buttons">
+                    <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+                    <a href="/usuarios/registro" class="btn btn-secondary">Registrarse</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

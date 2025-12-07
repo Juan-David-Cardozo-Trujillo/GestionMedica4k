@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Citas</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Gestión de Citas</h2>
+        <a href="/citas/nuevo" class="btn btn-primary">Nueva Cita</a>
+        <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Cita</th>
+                    <th>Tipo Servicio</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="cita : ${citas}">
+                    <td th:text="${cita.idCita}"></td>
+                    <td th:text="${cita.tipoServicio}"></td>
+                    <td th:text="${cita.estado}"></td>
+                    <td th:text="${cita.fecha}"></td>
+                    <td th:text="${cita.hora}"></td>
+                    <td>
+                        <a th:href="@{/citas/eliminar/{id}(id=${cita.idCita})}" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Está seguro?')">Eliminar</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

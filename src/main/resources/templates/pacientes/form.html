@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Formulario Paciente</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Nuevo Paciente</h2>
+      <form
+        th:action="@{/pacientes/guardar}"
+        th:object="${paciente}"
+        method="post"
+      >
+        <div class="form-group">
+          <label for="codPaciente">Código Paciente:</label>
+          <input type="number" th:field="*{codPaciente}" required />
+        </div>
+        <div class="form-group">
+          <label for="numDocumento">Persona:</label>
+          <select th:field="*{numDocumento}" required>
+            <option value="">Seleccione...</option>
+            <option
+              th:each="persona : ${personas}"
+              th:value="${persona.numDocumento}"
+              th:text="${persona.nombrePersona + ' ' + persona.apellidoPersona}"
+            ></option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="dirPaciente">Dirección:</label>
+          <input type="text" th:field="*{dirPaciente}" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="/pacientes" class="btn btn-secondary">Cancelar</a>
+      </form>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+    <script th:src="@{/js/form-validation.js}"></script>
+  </body>
+</html>

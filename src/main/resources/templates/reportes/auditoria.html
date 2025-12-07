@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Auditoría Historias Clínicas</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Auditoría - Últimos 10 Eventos en Historias Clínicas</h2>
+        <a href="/reportes" class="btn btn-secondary">Volver</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Evento</th>
+                    <th>Fecha</th>
+                    <th>Acción</th>
+                    <th>Tabla</th>
+                    <th>IP Origen</th>
+                    <th>Usuario</th>
+                    <th>Persona</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="dato : ${datos}">
+                    <td th:text="${dato.idevento}"></td>
+                    <td th:text="${dato.fechaevento}"></td>
+                    <td th:text="${dato.accion}"></td>
+                    <td th:text="${dato.tablaafectada}"></td>
+                    <td th:text="${dato.iporigen}"></td>
+                    <td th:text="${dato.nombreusuario}"></td>
+                    <td th:text="${dato.nombrepersona + ' ' + dato.apellidopersona}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/reports.js}"></script>
+</body>
+</html>

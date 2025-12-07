@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Pacientes</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Gestión de Pacientes</h2>
+        <a href="/pacientes/nuevo" class="btn btn-primary">Nuevo Paciente</a>
+        <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código Paciente</th>
+                    <th>Num. Documento</th>
+                    <th>Dirección</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="paciente : ${pacientes}">
+                    <td th:text="${paciente.codPaciente}"></td>
+                    <td th:text="${paciente.numDocumento}"></td>
+                    <td th:text="${paciente.dirPaciente}"></td>
+                    <td>
+                        <a th:href="@{/pacientes/eliminar/{cod}/{doc}(cod=${paciente.codPaciente},doc=${paciente.numDocumento})}" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Está seguro?')">Eliminar</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

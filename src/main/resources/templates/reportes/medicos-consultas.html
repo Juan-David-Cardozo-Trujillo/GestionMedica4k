@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Médicos con Más Consultas</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Médicos con Mayor Número de Consultas por Semana</h2>
+        <a href="/reportes" class="btn btn-secondary">Volver</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Semana</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="dato : ${datos}">
+                    <td th:text="${dato.nombrepersona}"></td>
+                    <td th:text="${dato.apellidopersona}"></td>
+                    <td th:text="${dato.semana}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/reports.js}"></script>
+</body>
+</html>

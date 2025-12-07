@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Departamentos Comparten Equipamiento</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Departamentos que Comparten Equipamiento</h2>
+        <a href="/reportes" class="btn btn-secondary">Volver</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Sede</th>
+                    <th>Nombre Departamento</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="dato : ${datos}">
+                    <td th:text="${dato.idsede}"></td>
+                    <td th:text="${dato.nombredepartamento}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/reports.js}"></script>
+</body>
+</html>

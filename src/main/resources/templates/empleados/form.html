@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario Empleado</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Nuevo Empleado</h2>
+        <form th:action="@{/empleados/guardar}" th:object="${empleado}" method="post">
+            <div class="form-group">
+                <label for="numDocumento">Persona:</label>
+                <select th:field="*{numDocumento}" required>
+                    <option value="">Seleccione...</option>
+                    <option th:each="persona : ${personas}" 
+                            th:value="${persona.numDocumento}"
+                            th:text="${persona.nombrePersona + ' ' + persona.apellidoPersona}">
+                    </option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="idEmpleado">ID Empleado:</label>
+                <input type="number" th:field="*{idEmpleado}" required>
+            </div>
+            <div class="form-group">
+                <label for="cargo">Cargo:</label>
+                <input type="text" th:field="*{cargo}" required>
+            </div>
+            <div class="form-group">
+                <label for="nombreDepartamento">Departamento:</label>
+                <input type="text" th:field="*{nombreDepartamento}">
+            </div>
+            <div class="form-group">
+                <label for="idSede">Sede:</label>
+                <select th:field="*{idSede}">
+                    <option value="">Seleccione...</option>
+                    <option th:each="sede : ${sedes}" 
+                            th:value="${sede.idSede}"
+                            th:text="${sede.nombreSede}">
+                    </option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="/empleados" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/form-validation.js}"></script>
+</body>
+</html>

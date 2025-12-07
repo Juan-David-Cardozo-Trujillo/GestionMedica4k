@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Equipamiento</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Gestión de Equipamiento Médico</h2>
+        <a href="/equipamientos/nuevo" class="btn btn-primary">Nuevo Equipamiento</a>
+        <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Fecha Mantenimiento</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="equip : ${equipamientos}">
+                    <td th:text="${equip.codEquip}"></td>
+                    <td th:text="${equip.nombreEquip}"></td>
+                    <td th:text="${equip.fechaMantenimiento}"></td>
+                    <td th:text="${equip.estado}"></td>
+                    <td>
+                        <a th:href="@{/equipamientos/eliminar/{id}(id=${equip.codEquip})}" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Está seguro?')">Eliminar</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

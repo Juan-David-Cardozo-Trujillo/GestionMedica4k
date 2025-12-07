@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Empleados</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Gestión de Empleados</h2>
+        <a href="/empleados/nuevo" class="btn btn-primary">Nuevo Empleado</a>
+        <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Num. Documento</th>
+                    <th>ID Empleado</th>
+                    <th>Cargo</th>
+                    <th>Departamento</th>
+                    <th>Sede</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="empleado : ${empleados}">
+                    <td th:text="${empleado.numDocumento}"></td>
+                    <td th:text="${empleado.idEmpleado}"></td>
+                    <td th:text="${empleado.cargo}"></td>
+                    <td th:text="${empleado.nombreDepartamento}"></td>
+                    <td th:text="${empleado.idSede}"></td>
+                    <td>
+                        <a th:href="@{/empleados/eliminar/{doc}/{id}(doc=${empleado.numDocumento},id=${empleado.idEmpleado})}" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Está seguro?')">Eliminar</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

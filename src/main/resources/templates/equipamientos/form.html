@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario Equipamiento</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2>Nuevo Equipamiento</h2>
+        <form th:action="@{/equipamientos/guardar}" th:object="${equipamiento}" method="post">
+            <div class="form-group">
+                <label for="codEquip">Código:</label>
+                <input type="number" th:field="*{codEquip}" required>
+            </div>
+            <div class="form-group">
+                <label for="nombreEquip">Nombre:</label>
+                <input type="text" th:field="*{nombreEquip}" required>
+            </div>
+            <div class="form-group">
+                <label for="fechaMantenimiento">Fecha Mantenimiento:</label>
+                <input type="date" th:field="*{fechaMantenimiento}" required>
+            </div>
+            <div class="form-group">
+                <label for="estado">Estado:</label>
+                <select th:field="*{estado}" required>
+                    <option value="Operativo">Operativo</option>
+                    <option value="En Mantenimiento">En Mantenimiento</option>
+                    <option value="Fuera de servicio">Fuera de servicio</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="/equipamientos" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+    <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/form-validation.js}"></script>
+</body>
+</html>
