@@ -22,16 +22,32 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/registro", "/css/**", "/js/**").permitAll()
+                // Permitir acceso público a recursos estáticos
+                .requestMatchers(
+                        "/",
+                        "/login",
+                        "/usuarios/registro",
+                        "/usuarios/registrar",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/favicon.ico"
+                ).permitAll()
+                // Requerir autenticación para todo lo demás
                 .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                 .loginPage("/login")
+                .loginProcessingUrl("/login")
                 .defaultSuccessUrl("/dashboard", true)
+                .failureUrl("/login?error=true")
                 .permitAll()
                 )
                 .logout(logout -> logout
+                .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
                 );
 
