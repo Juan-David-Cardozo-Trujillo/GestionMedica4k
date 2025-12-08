@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Médicos</title>
+    <link rel="stylesheet" href="reportes.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Sistema de Reportes Médicos</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportarTodos()">
+                    📥 Exportar Todo
+                </button>
+                <button class="btn btn-primary" onclick="window.print()">
+                    🖨️ Imprimir
+                </button>
+            </div>
+        </header>
+
+        <!-- Menú de Reportes -->
+        <div class="reportes-menu">
+            <h2>Seleccione un Reporte</h2>
+            <div class="reportes-grid">
+                <div class="reporte-card" onclick="loadReporte('medicamentos')">
+                    <div class="reporte-icon">💊</div>
+                    <h3>Medicamentos Más Recetados</h3>
+                    <p>Por sede hospitalaria</p>
+                </div>
+
+                <div class="reporte-card" onclick="loadReporte('medicos')">
+                    <div class="reporte-icon">👨‍⚕️</div>
+                    <h3>Médicos con Más Consultas</h3>
+                    <p>Por semana</p>
+                </div>
+
+                <div class="reporte-card" onclick="loadReporte('tiempo')">
+                    <div class="reporte-icon">⏱️</div>
+                    <h3>Tiempo Promedio</h3>
+                    <p>Cita a diagnóstico</p>
+                </div>
+
+                <div class="reporte-card" onclick="loadReporte('auditoria')">
+                    <div class="reporte-icon">🔍</div>
+                    <h3>Auditoría</h3>
+                    <p>Historias clínicas</p>
+                </div>
+
+                <div class="reporte-card" onclick="loadReporte('equipamiento')">
+                    <div class="reporte-icon">⚙️</div>
+                    <h3>Equipamiento Compartido</h3>
+                    <p>Entre departamentos</p>
+                </div>
+
+                <div class="reporte-card" onclick="loadReporte('enfermedades')">
+                    <div class="reporte-icon">🦠</div>
+                    <h3>Pacientes por Enfermedad</h3>
+                    <p>Por sede</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div id="resultadosArea" class="resultados-area" style="display:none;">
+            <div class="resultados-header">
+                <h2 id="reporteTitle"></h2>
+                <button class="btn btn-secondary" onclick="cerrarReporte()">✖ Cerrar</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generando reporte...</p>
+            </div>
+            
+            <div id="reporteContent" class="reporte-content">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Filtros Avanzados -->
+    <div id="filtrosModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarFiltros()">&times;</span>
+            <h2>🔍 Filtros Avanzados</h2>
+            <form id="filtrosForm">
+                <div class="form-group">
+                    <label>Fecha Desde</label>
+                    <input type="date" id="fechaDesde">
+                </div>
+                <div class="form-group">
+                    <label>Fecha Hasta</label>
+                    <input type="date" id="fechaHasta">
+                </div>
+                <div class="form-group">
+                    <label>Sede</label>
+                    <select id="sedeFilter">
+                        <option value="">Todas las sedes</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="cerrarFiltros()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="aplicarFiltros()">Aplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="reportes.js"></script>
+</body>
+</html>

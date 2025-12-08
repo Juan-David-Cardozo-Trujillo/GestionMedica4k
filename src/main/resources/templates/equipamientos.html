@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Equipamiento</title>
+    <link rel="stylesheet" href="medicamentos.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Gestión de Equipamiento Médico</h1>
+            <button class="btn btn-primary" onclick="openModal()" id="btnNuevo">
+                ➕ Nuevo Equipamiento
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar equipamiento..." 
+                   oninput="filterEquipamientos()">
+            <select id="filterEstado" onchange="filterEquipamientos()">
+                <option value="">Todos los estados</option>
+                <option value="Operativo">Operativo</option>
+                <option value="En Mantenimiento">En Mantenimiento</option>
+                <option value="Fuera de Servicio">Fuera de Servicio</option>
+            </select>
+            <input type="month" id="filterFecha" onchange="filterEquipamientos()" 
+                   title="Filtrar por mes de mantenimiento">
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEquipos">0</div>
+                <div class="stat-label">Total Equipos</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-number" id="operativos">0</div>
+                <div class="stat-label">Operativos</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-number" id="enMantenimiento">0</div>
+                <div class="stat-label">En Mantenimiento</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre Equipo</th>
+                        <th>Última Mantenimiento</th>
+                        <th>Próximo Mantenimiento</th>
+                        <th>Estado</th>
+                        <th>Días Restantes</th>
+                        <th class="acciones-col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="equipamientosBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Crear/Editar -->
+    <div id="equipamientoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nuevo Equipamiento</h2>
+            <form id="equipamientoForm" onsubmit="saveEquipamiento(event)">
+                <div class="form-group">
+                    <label>Nombre del Equipo *</label>
+                    <input type="text" id="nombreEquip" required 
+                           placeholder="Ej: Resonador Magnético GE 3.0T">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha Último Mantenimiento *</label>
+                        <input type="date" id="fechaMantenimiento" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado *</label>
+                        <select id="estado" required>
+                            <option value="Operativo">Operativo</option>
+                            <option value="En Mantenimiento">En Mantenimiento</option>
+                            <option value="Fuera de Servicio">Fuera de Servicio</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" rows="3" 
+                              placeholder="Notas adicionales sobre el equipamiento..."></textarea>
+                </div>
+
+                <div class="alert-info">
+                    ℹ️ El mantenimiento preventivo se programa cada 6 meses
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalles -->
+    <div id="detallesModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDetallesModal()">&times;</span>
+            <h2>📋 Detalle del Equipamiento</h2>
+            
+            <div id="equipamientoDetalles" class="details-container">
+                <!-- Se carga dinámicamente -->
+            </div>
+
+            <div class="stock-section" id="mantenimientoSection">
+                <h3>🔧 Registrar Mantenimiento</h3>
+                <form id="mantenimientoForm" onsubmit="registrarMantenimiento(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha de Mantenimiento</label>
+                            <input type="date" id="nuevaFechaMantenimiento" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nuevo Estado</label>
+                            <select id="nuevoEstado" required>
+                                <option value="Operativo">Operativo</option>
+                                <option value="En Mantenimiento">En Mantenimiento</option>
+                                <option value="Fuera de Servicio">Fuera de Servicio</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción del Mantenimiento</label>
+                        <textarea id="descripcionMantenimiento" rows="3" required
+                                  placeholder="Detalle las actividades realizadas..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Registrar Mantenimiento</button>
+                </form>
+            </div>
+
+            <div class="stock-section">
+                <h3>🏢 Departamentos que Usan este Equipo</h3>
+                <div id="departamentosList"></div>
+                
+                <button class="btn btn-primary" onclick="openAsignarModal()" id="btnAsignar">
+                    ➕ Asignar a Departamento
+                </button>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeDetallesModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Asignar Departamento -->
+    <div id="asignarModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAsignarModal()">&times;</span>
+            <h2>🏢 Asignar a Departamento</h2>
+            <form id="asignarForm" onsubmit="asignarDepartamento(event)">
+                <div class="form-group">
+                    <label>Sede *</label>
+                    <select id="idSedeAsignar" required onchange="loadDepartamentosSede()">
+                        <option value="">Seleccione sede</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Departamento *</label>
+                    <select id="nombreDepartamentoAsignar" required>
+                        <option value="">Seleccione departamento</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeAsignarModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Asignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="equipamientos.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historias Clínicas</title>
+    <link rel="stylesheet" href="historias-clinicas.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Historias Clínicas</h1>
+            <button class="btn btn-primary" onclick="openModal()">
+                ➕ Nueva Historia Clínica
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar por paciente o código..." 
+                   oninput="filterHistorias()">
+            <select id="filterPaciente" onchange="filterHistorias()">
+                <option value="">Todos los pacientes</option>
+            </select>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalHistorias">0</div>
+                <div class="stat-label">Total Historias</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="historiasActivas">0</div>
+                <div class="stat-label">Activas</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código Historia</th>
+                        <th>Paciente</th>
+                        <th>Documento</th>
+                        <th>Edad</th>
+                        <th>Fecha Creación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="historiasBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Nueva/Editar Historia -->
+    <div id="historiaModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nueva Historia Clínica</h2>
+            <form id="historiaForm" onsubmit="saveHistoria(event)">
+                <div class="form-group">
+                    <label>Paciente *</label>
+                    <select id="codPaciente" required>
+                        <option value="">Seleccione un paciente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones Iniciales</label>
+                    <textarea id="observaciones" rows="4" 
+                              placeholder="Notas iniciales sobre el paciente..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Historia</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ver Detalles -->
+    <div id="detallesModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeDetallesModal()">&times;</span>
+            <h2>📋 Detalle de Historia Clínica</h2>
+            
+            <div id="historiaDetalles" class="details-container">
+                <!-- Se carga dinámicamente -->
+            </div>
+
+            <div class="diagnosticos-section">
+                <h3>🔬 Diagnósticos Registrados</h3>
+                <div id="diagnosticosList"></div>
+                
+                <button class="btn btn-primary" onclick="openDiagnosticoModal()">
+                    ➕ Agregar Diagnóstico
+                </button>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeDetallesModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Diagnóstico -->
+    <div id="diagnosticoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDiagnosticoModal()">&times;</span>
+            <h2>🔬 Registrar Diagnóstico</h2>
+            <form id="diagnosticoForm" onsubmit="saveDiagnostico(event)">
+                <div class="form-group">
+                    <label>Cita *</label>
+                    <select id="idCita" required>
+                        <option value="">Seleccione una cita</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Enfermedad *</label>
+                    <select id="idEnfermedad" required>
+                        <option value="">Seleccione enfermedad</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones del Diagnóstico</label>
+                    <textarea id="observacionesDiag" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeDiagnosticoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="historias-clinicas.js"></script>
+</body>
+</html>
