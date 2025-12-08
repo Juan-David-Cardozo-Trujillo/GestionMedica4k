@@ -16,24 +16,17 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // 1. Eliminamos el @Autowired de campo para evitar problemas de instanciación
-    // private CustomUserDetailsService userDetailsService; 
-    // 2. IMPORTANTE: Hacemos este método 'static' para romper el ciclo de dependencia
     @Bean
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 3. Inyectamos el servicio y el encoder como parámetros del método
     @Bean
-    public DaoAuthenticationProvider authenticationProvider(CustomUserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-        // CAMBIO AQUÍ: Pasamos el userDetailsService DENTRO de los paréntesis
+    public DaoAuthenticationProvider authenticationProvider(
+            CustomUserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-
-        // Esta línea ya no es necesaria porque lo pasamos arriba, puedes borrarla o comentarla:
-        // authProvider.setUserDetailsService(userDetailsService); 
         authProvider.setPasswordEncoder(passwordEncoder);
-
         return authProvider;
     }
 
@@ -63,21 +56,33 @@ public class SecurityConfig {
                         "/favicon.ico",
                         "/error"
                 ).permitAll()
-                // Rutas específicas por rol
+                // Dashboard accesible para todos los autenticados
                 .requestMatchers("/dashboard").authenticated()
-                // Administrador
-                .requestMatchers("/pacientes/**", "/empleados/**", "/departamentos/**",
-                        "/sedes/**", "/reportes/**", "/usuarios/**", "/personas/**",
-                        "/enfermedades/**", "/auditoria/**", "/equipamientos/**")
-                .hasAnyRole("Administrador")
+                // Administrador - acceso total
+                .requestMatchers(
+                        "/pacientes/**",
+                        "/empleados/**",
+                        "/departamentos/**",
+                        "/sedes/**",
+                        "/reportes/**",
+                        "/usuarios/**",
+                        "/personas/**",
+                        "/enfermedades/**",
+                        "/auditoria/**",
+                        "/equipamientos/**",
+                        "/historias-clinicas/**",
+                        "/diagnosticos/**",
+                        "/citas/**",
+                        "/medicamentos/**"
+                ).hasAnyRole("Administrador")
                 // Médico
-                .requestMatchers("/historias-clinicas/**", "/diagnosticos/**")
+                .requestMatchers("/historias-clinicas/**", "/diagnosticos/**", "/citas/**")
                 .hasAnyRole("Medico", "Administrador")
                 // Secretaria
                 .requestMatchers("/pacientes/**", "/citas/**", "/personas/**")
                 .hasAnyRole("Secretaria", "Administrador")
                 // Técnico de Mantenimiento
-                .requestMatchers("/equipamientos/**", "/equipos-departamento/**")
+                .requestMatchers("/equipamientos/**")
                 .hasAnyRole("TecnicoMantenimiento", "AsistenteBodega", "Administrador")
                 // Asistente de Bodega
                 .requestMatchers("/medicamentos/**")

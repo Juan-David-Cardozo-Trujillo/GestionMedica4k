@@ -22,21 +22,24 @@ public class HomeController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        // Obtener el usuario autenticado
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
-        // Obtener el rol del usuario (sin el prefijo ROLE_)
         String role = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
                 .orElse("ROLE_Usuario")
                 .replace("ROLE_", "");
 
-        // Pasar datos al modelo
         model.addAttribute("username", username);
         model.addAttribute("userRole", role);
 
         return "dashboard";
     }
+
+    // --- IMPORTANTE ---
+    // He borrado TODOS los métodos que ya tienen su propio controlador
+    // (reportes, sedes, departamentos, usuarios/registro, etc).
+    // Si dejas alguno duplicado aquí y en otro controlador, Spring fallará.
+    // El método registro() QUE ESTABA AQUÍ, LO BORRÉ.
 }

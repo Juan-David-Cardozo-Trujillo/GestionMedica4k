@@ -177,11 +177,6 @@
         color: #333;
       }
 
-      .topbar-actions {
-        display: flex;
-        gap: 15px;
-      }
-
       .content-area {
         flex: 1;
         padding: 30px;
@@ -189,7 +184,6 @@
         background: #f5f7fa;
       }
 
-      /* Content Cards */
       .content-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -243,22 +237,8 @@
         background: #5568d3;
       }
 
-      /* Mobile Menu Toggle */
       .mobile-menu-toggle {
         display: none;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        font-size: 24px;
-        cursor: pointer;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        z-index: 1000;
       }
 
       @media (max-width: 768px) {
@@ -277,22 +257,29 @@
 
         .mobile-menu-toggle {
           display: block;
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 60px;
+          height: 60px;
+          background: #667eea;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          font-size: 24px;
+          cursor: pointer;
+          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          z-index: 1000;
         }
 
         .content-grid {
           grid-template-columns: 1fr;
         }
       }
-
-      /* Hidden class */
-      .hidden {
-        display: none !important;
-      }
     </style>
   </head>
   <body>
     <div class="dashboard-container">
-      <!-- Sidebar -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
           <h2>HIS+ System</h2>
@@ -301,23 +288,24 @@
         <div class="user-info">
           <div class="user-avatar">👤</div>
           <div class="user-details">
-            <h4 id="userName">Usuario</h4>
-            <span class="user-role" id="userRole">Rol</span>
+            <h4 th:text="${username}">Usuario</h4>
+            <span class="user-role" th:text="${userRole}">Rol</span>
           </div>
         </div>
 
         <nav class="sidebar-menu" id="sidebarMenu">
-          <!-- El menú se cargará dinámicamente según el rol -->
+          <!-- Menú dinámico cargado por JavaScript según el rol -->
         </nav>
 
         <div class="sidebar-footer">
-          <button class="logout-btn" onclick="logout()">
-            <span>🚪</span> Cerrar Sesión
-          </button>
+          <form th:action="@{/logout}" method="post" style="margin: 0">
+            <button type="submit" class="logout-btn">
+              <span>🚪</span> Cerrar Sesión
+            </button>
+          </form>
         </div>
       </aside>
 
-      <!-- Main Content -->
       <main class="main-content">
         <div class="topbar">
           <h1 id="pageTitle">Panel de Control</h1>
@@ -327,7 +315,6 @@
         </div>
 
         <div class="content-area" id="contentArea">
-          <!-- El contenido se cargará dinámicamente -->
           <div class="content-grid" id="contentGrid">
             <div class="content-card">
               <div class="card-icon">👋</div>
@@ -341,10 +328,14 @@
       </main>
     </div>
 
-    <!-- Mobile Menu Toggle -->
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
 
-    <script>
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      const userRole = /*[[${userRole}]]*/ "Usuario";
+      const userName = /*[[${username}]]*/ "Usuario";
+      /*]]>*/
+
       // Configuración de roles y menús
       const roleMenus = {
         Administrador: {
@@ -352,76 +343,26 @@
             {
               title: "Gestión General",
               items: [
-                {
-                  icon: "🏥",
-                  text: "Sedes Hospitalarias",
-                  url: "/sedes",
-                  description: "Ver y gestionar sedes",
-                },
-                {
-                  icon: "👥",
-                  text: "Pacientes",
-                  url: "/pacientes",
-                  description: "Gestión completa de pacientes",
-                },
-                {
-                  icon: "🏢",
-                  text: "Departamentos",
-                  url: "/departamentos",
-                  description: "Administrar departamentos",
-                },
-                {
-                  icon: "👨‍⚕️",
-                  text: "Empleados",
-                  url: "/empleados",
-                  description: "Gestión de personal",
-                },
+                { icon: "🏥", text: "Sedes Hospitalarias", url: "/sedes" },
+                { icon: "👥", text: "Pacientes", url: "/pacientes" },
+                { icon: "🏢", text: "Departamentos", url: "/departamentos" },
+                { icon: "👨‍⚕️", text: "Empleados", url: "/empleados" },
               ],
             },
             {
               title: "Administración",
               items: [
-                {
-                  icon: "📊",
-                  text: "Reportes Médicos",
-                  url: "/reportes",
-                  description: "Ver todos los reportes",
-                },
-                {
-                  icon: "👤",
-                  text: "Usuarios",
-                  url: "/usuarios",
-                  description: "Gestión de usuarios del sistema",
-                },
-                {
-                  icon: "🧑",
-                  text: "Personas",
-                  url: "/personas",
-                  description: "Registro de personas",
-                },
-                {
-                  icon: "🦠",
-                  text: "Enfermedades",
-                  url: "/enfermedades",
-                  description: "Catálogo de enfermedades",
-                },
+                { icon: "📊", text: "Reportes Médicos", url: "/reportes" },
+                { icon: "👤", text: "Usuarios", url: "/usuarios/registro" },
+                { icon: "🧑", text: "Personas", url: "/personas" },
+                { icon: "🦠", text: "Enfermedades", url: "/enfermedades" },
               ],
             },
             {
               title: "Auditoría",
               items: [
-                {
-                  icon: "🔍",
-                  text: "Auditoría de Accesos",
-                  url: "/auditoria",
-                  description: "Registro de accesos al sistema",
-                },
-                {
-                  icon: "⚙️",
-                  text: "Equipamiento",
-                  url: "/equipamientos",
-                  description: "Gestión de equipos médicos",
-                },
+                { icon: "🔍", text: "Auditoría de Accesos", url: "/auditoria" },
+                { icon: "⚙️", text: "Equipamiento", url: "/equipamientos" },
               ],
             },
           ],
@@ -435,37 +376,16 @@
                   icon: "📋",
                   text: "Historias Clínicas",
                   url: "/historias-clinicas",
-                  description: "Ver y editar historias clínicas",
                 },
-                {
-                  icon: "🩺",
-                  text: "Diagnósticos",
-                  url: "/diagnosticos",
-                  description: "Registrar diagnósticos",
-                },
-                {
-                  icon: "📅",
-                  text: "Mis Citas",
-                  url: "/citas",
-                  description: "Ver citas asignadas",
-                },
+                { icon: "🩺", text: "Diagnósticos", url: "/diagnosticos" },
+                { icon: "📅", text: "Mis Citas", url: "/citas" },
               ],
             },
             {
               title: "Recursos",
               items: [
-                {
-                  icon: "🦠",
-                  text: "Enfermedades",
-                  url: "/enfermedades",
-                  description: "Consultar catálogo",
-                },
-                {
-                  icon: "💊",
-                  text: "Medicamentos",
-                  url: "/medicamentos",
-                  description: "Consultar medicamentos",
-                },
+                { icon: "🦠", text: "Enfermedades", url: "/enfermedades" },
+                { icon: "💊", text: "Medicamentos", url: "/medicamentos" },
               ],
             },
           ],
@@ -475,47 +395,9 @@
             {
               title: "Gestión de Pacientes",
               items: [
-                {
-                  icon: "👥",
-                  text: "Pacientes",
-                  url: "/pacientes",
-                  description: "Registrar y gestionar pacientes",
-                },
-                {
-                  icon: "🧑",
-                  text: "Personas",
-                  url: "/personas",
-                  description: "Registro de personas",
-                },
-                {
-                  icon: "📅",
-                  text: "Citas",
-                  url: "/citas",
-                  description: "Agendar y gestionar citas",
-                },
-              ],
-            },
-            {
-              title: "Consulta",
-              items: [
-                {
-                  icon: "👨‍⚕️",
-                  text: "Empleados",
-                  url: "/empleados",
-                  description: "Ver personal médico",
-                },
-                {
-                  icon: "🏥",
-                  text: "Sedes",
-                  url: "/sedes",
-                  description: "Consultar sedes",
-                },
-                {
-                  icon: "📊",
-                  text: "Reportes",
-                  url: "/reportes",
-                  description: "Generar reportes",
-                },
+                { icon: "👥", text: "Pacientes", url: "/pacientes" },
+                { icon: "🧑", text: "Personas", url: "/personas" },
+                { icon: "📅", text: "Citas", url: "/citas" },
               ],
             },
           ],
@@ -525,18 +407,7 @@
             {
               title: "Equipamiento",
               items: [
-                {
-                  icon: "⚙️",
-                  text: "Equipamientos",
-                  url: "/equipamientos",
-                  description: "Ver equipos médicos",
-                },
-                {
-                  icon: "🏢",
-                  text: "Equipos por Departamento",
-                  url: "/equipos-departamento",
-                  description: "Distribución de equipos",
-                },
+                { icon: "⚙️", text: "Equipamientos", url: "/equipamientos" },
               ],
             },
           ],
@@ -546,36 +417,13 @@
             {
               title: "Inventario",
               items: [
-                {
-                  icon: "💊",
-                  text: "Medicamentos",
-                  url: "/medicamentos",
-                  description: "Gestión de medicamentos",
-                },
-                {
-                  icon: "⚙️",
-                  text: "Equipamientos",
-                  url: "/equipamientos",
-                  description: "Gestión de equipos",
-                },
-                {
-                  icon: "🏢",
-                  text: "Equipos por Departamento",
-                  url: "/equipos-departamento",
-                  description: "Asignación de equipos",
-                },
+                { icon: "💊", text: "Medicamentos", url: "/medicamentos" },
+                { icon: "⚙️", text: "Equipamientos", url: "/equipamientos" },
               ],
             },
           ],
         },
       };
-
-      // Simular obtención del rol del usuario (esto debería venir del backend)
-      function getCurrentUserRole() {
-        // Por ahora retornamos un rol de ejemplo
-        // En producción, esto vendría del servidor mediante Thymeleaf
-        return "Administrador";
-      }
 
       // Cargar menú según el rol
       function loadMenuForRole(role) {
@@ -602,23 +450,9 @@
             menuItem.className = "menu-item";
             menuItem.href = item.url;
             menuItem.innerHTML = `
-                        <span class="menu-icon">${item.icon}</span>
-                        <span>${item.text}</span>
-                    `;
-
-            menuItem.addEventListener("click", (e) => {
-              e.preventDefault();
-              loadContent(item);
-              document
-                .querySelectorAll(".menu-item")
-                .forEach((mi) => mi.classList.remove("active"));
-              menuItem.classList.add("active");
-
-              // Cerrar sidebar en móvil
-              if (window.innerWidth <= 768) {
-                toggleSidebar();
-              }
-            });
+              <span class="menu-icon">${item.icon}</span>
+              <span>${item.text}</span>
+            `;
 
             sectionDiv.appendChild(menuItem);
           });
@@ -627,34 +461,10 @@
         });
       }
 
-      // Cargar contenido en el área principal
-      function loadContent(item) {
-        document.getElementById("pageTitle").textContent = item.text;
-        const contentGrid = document.getElementById("contentGrid");
-
-        contentGrid.innerHTML = `
-                <div class="content-card">
-                    <div class="card-icon">${item.icon}</div>
-                    <h3 class="card-title">${item.text}</h3>
-                    <p class="card-description">${item.description}</p>
-                    <a href="${item.url}" class="card-action">Ir a ${item.text}</a>
-                </div>
-            `;
-      }
-
-      // Toggle sidebar en móvil
       function toggleSidebar() {
         document.getElementById("sidebar").classList.toggle("active");
       }
 
-      // Logout
-      function logout() {
-        if (confirm("¿Está seguro que desea cerrar sesión?")) {
-          window.location.href = "/logout";
-        }
-      }
-
-      // Mostrar fecha actual
       function updateDate() {
         const now = new Date();
         const options = {
@@ -669,12 +479,6 @@
 
       // Inicializar
       document.addEventListener("DOMContentLoaded", function () {
-        const userRole = getCurrentUserRole();
-        document.getElementById("userRole").textContent = userRole;
-
-        // En producción, el nombre vendría del servidor
-        document.getElementById("userName").textContent = "Usuario Demo";
-
         loadMenuForRole(userRole);
         updateDate();
       });
