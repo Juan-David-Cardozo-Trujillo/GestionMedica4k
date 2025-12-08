@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Pacientes</title>
+    <link rel="stylesheet" href="pacientes.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👥 Gestión de Pacientes</h1>
+            <button class="btn btn-primary" onclick="openModal()">
+                ➕ Nuevo Paciente
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar paciente..." 
+                   oninput="filterPatients()">
+            <select id="filterSede" onchange="filterPatients()">
+                <option value="">Todas las sedes</option>
+                <option value="1">Sede Central</option>
+                <option value="2">Sede Norte</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table id="patientsTable">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre Completo</th>
+                        <th>Documento</th>
+                        <th>Dirección</th>
+                        <th>Correo</th>
+                        <th>Edad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="patientsBody">
+                    <!-- Datos cargados dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para crear/editar -->
+    <div id="patientModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nuevo Paciente</h2>
+            <form id="patientForm" onsubmit="savePatient(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo Documento *</label>
+                        <select id="tipoDocumento" required>
+                            <option value="">Seleccione</option>
+                            <option value="CC">Cédula de Ciudadanía</option>
+                            <option value="TI">Tarjeta de Identidad</option>
+                            <option value="CE">Cédula de Extranjería</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Documento *</label>
+                        <input type="number" id="numDocumento" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="nombrePersona" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Apellido *</label>
+                        <input type="text" id="apellidoPersona" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Género *</label>
+                        <select id="genero" required>
+                            <option value="">Seleccione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento *</label>
+                        <input type="date" id="fechaNacimiento" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" id="correo" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Dirección *</label>
+                    <input type="text" id="dirPaciente" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="pacientes.js"></script>
+</body>
+</html>

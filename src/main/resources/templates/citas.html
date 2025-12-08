@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Citas</title>
+    <link rel="stylesheet" href="citas.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Gestión de Citas</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="toggleView()">
+                    <span id="viewToggleText">📋 Ver Lista</span>
+                </button>
+                <button class="btn btn-primary" onclick="openModal()">
+                    ➕ Nueva Cita
+                </button>
+            </div>
+        </header>
+
+        <!-- Vista de Calendario -->
+        <div id="calendarView" class="calendar-view">
+            <div class="calendar-controls">
+                <button class="btn-nav" onclick="previousMonth()">◀ Anterior</button>
+                <h2 id="currentMonth"></h2>
+                <button class="btn-nav" onclick="nextMonth()">Siguiente ▶</button>
+            </div>
+            
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="status-badge pendiente"></span> Pendiente</span>
+                <span class="legend-item"><span class="status-badge tomada"></span> Tomada</span>
+                <span class="legend-item"><span class="status-badge cancelada"></span> Cancelada</span>
+            </div>
+            
+            <div class="calendar-grid" id="calendar">
+                <!-- Calendario generado dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Vista de Lista -->
+        <div id="listView" class="list-view" style="display:none;">
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar cita..." 
+                       oninput="filterAppointments()">
+                <select id="filterEstado" onchange="filterAppointments()">
+                    <option value="">Todos los estados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Tomada">Tomada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+                <input type="date" id="filterFecha" onchange="filterAppointments()">
+                <select id="filterMedico" onchange="filterAppointments()">
+                    <option value="">Todos los médicos</option>
+                </select>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsBody">
+                        <!-- Datos cargados dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear/editar cita -->
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nueva Cita</h2>
+            <form id="appointmentForm" onsubmit="saveAppointment(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Paciente *</label>
+                        <select id="codPaciente" required>
+                            <option value="">Seleccione un paciente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Médico *</label>
+                        <select id="medico" required>
+                            <option value="">Seleccione un médico</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha *</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora *</label>
+                        <input type="time" id="hora" required step="900">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Servicio *</label>
+                        <select id="tipoServicio" required>
+                            <option value="General">Consulta General</option>
+                            <option value="Especialista">Especialista</option>
+                            <option value="Control">Control</option>
+                            <option value="Urgencia">Urgencia</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado *</label>
+                        <select id="estado" required>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Tomada">Tomada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" rows="3" 
+                              placeholder="Notas adicionales sobre la cita..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDetailsModal()">&times;</span>
+            <h2>📋 Detalles de la Cita</h2>
+            <div id="appointmentDetails" class="details-container">
+                <!-- Detalles cargados dinámicamente -->
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeDetailsModal()">Cerrar</button>
+                <button class="btn btn-warning" onclick="cancelAppointment()">Cancelar Cita</button>
+                <button class="btn btn-primary" onclick="editFromDetails()">Editar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="citas.js"></script>
+</body>
+</html>

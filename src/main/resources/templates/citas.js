@@ -1,0 +1,490 @@
+// citas.js
+const API_URL = 'http://localhost:3000/api';
+let currentAppointment = null;
+let allAppointments = [];
+let patients = [];
+let doctors = [];
+let currentDate = new Date();
+let viewMode = 'calendar'; // 'calendar' o 'list'
+
+// Meses en español
+const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    loadAppointments();
+    loadPatients();
+    loadDoctors();
+    renderCalendar();
+    setMinDate();
+});
+
+// Establecer fecha mínima (hoy)
+function setMinDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha').min = today;
+}
+
+// Cargar citas
+async function loadAppointments() {
+    try {
+        const response = await fetch(`${API_URL}/citas`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar citas');
+        
+        allAppointments = await response.json();
+        if (viewMode === 'list') {
+            renderAppointmentsList(allAppointments);
+        }
+        renderCalendar();
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar las citas', 'error');
+    }
+}
+
+// Cargar pacientes
+async function loadPatients() {
+    try {
+        const response = await fetch(`${API_URL}/pacientes`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        patients = await response.json();
+        populatePatientSelect();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Cargar médicos
+async function loadDoctors() {
+    try {
+        const response = await fetch(`${API_URL}/empleados?cargo=Medico`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        doctors = await response.json();
+        populateDoctorSelect();
+        populateDoctorFilter();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Poblar select de pacientes
+function populatePatientSelect() {
+    const select = document.getElementById('codPaciente');
+    select.innerHTML = '<option value="">Seleccione un paciente</option>';
+    patients.forEach(p => {
+        select.innerHTML += `
+            <option value="${p.codpaciente}" data-documento="${p.numdocumento}">
+                ${p.nombrepersona} ${p.apellidopersona} - ${p.numdocumento}
+            </option>
+        `;
+    });
+}
+
+// Poblar select de médicos
+function populateDoctorSelect() {
+    const select = document.getElementById('medico');
+    select.innerHTML = '<option value="">Seleccione un médico</option>';
+    doctors.forEach(d => {
+        select.innerHTML += `
+            <option value="${d.idempleado}" data-documento="${d.numdocumento}">
+                Dr(a). ${d.nombrepersona} ${d.apellidopersona} - ${d.nombredepartamento}
+            </option>
+        `;
+    });
+}
+
+// Poblar filtro de médicos
+function populateDoctorFilter() {
+    const select = document.getElementById('filterMedico');
+    doctors.forEach(d => {
+        select.innerHTML += `
+            <option value="${d.idempleado}">
+                Dr(a). ${d.nombrepersona} ${d.apellidopersona}
+            </option>
+        `;
+    });
+}
+
+// Renderizar calendario
+function renderCalendar() {
+    const calendar = document.getElementById('calendar');
+    const monthTitle = document.getElementById('currentMonth');
+    
+    // Actualizar título
+    monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    
+    // Obtener primer y último día del mes
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    
+    // Limpiar calendario
+    calendar.innerHTML = '';
+    
+    // Encabezados de días
+    const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        calendar.appendChild(header);
+    });
+    
+    // Días vacíos antes del primer día
+    for (let i = 0; i < startingDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        calendar.appendChild(emptyDay);
+    }
+    
+    // Días del mes
+    for (let day = 1; day <= totalDays; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        
+        const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (currentDayDate.getTime() === today.getTime()) {
+            dayDiv.classList.add('today');
+        }
+        
+        dayDiv.innerHTML = `<div class="day-number">${day}</div>`;
+        
+        // Filtrar citas de este día
+        const dayAppointments = allAppointments.filter(apt => {
+            const aptDate = new Date(apt.fecha);
+            return aptDate.getDate() === day && 
+                   aptDate.getMonth() === currentDate.getMonth() && 
+                   aptDate.getFullYear() === currentDate.getFullYear();
+        });
+        
+        // Agregar citas al día
+        if (dayAppointments.length > 0) {
+            const appointmentsContainer = document.createElement('div');
+            appointmentsContainer.className = 'day-appointments';
+            
+            dayAppointments.slice(0, 3).forEach(apt => {
+                const aptDiv = document.createElement('div');
+                aptDiv.className = `appointment-item ${apt.estado.toLowerCase()}`;
+                aptDiv.innerHTML = `
+                    <span class="apt-time">${apt.hora.substring(0, 5)}</span>
+                    <span class="apt-patient">${apt.paciente_nombre || 'Paciente'}</span>
+                `;
+                aptDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    showAppointmentDetails(apt.idcita);
+                };
+                appointmentsContainer.appendChild(aptDiv);
+            });
+            
+            if (dayAppointments.length > 3) {
+                const moreDiv = document.createElement('div');
+                moreDiv.className = 'more-appointments';
+                moreDiv.textContent = `+${dayAppointments.length - 3} más`;
+                appointmentsContainer.appendChild(moreDiv);
+            }
+            
+            dayDiv.appendChild(appointmentsContainer);
+        }
+        
+        // Click en el día para crear cita
+        dayDiv.onclick = () => {
+            const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+            const dateString = selectedDate.toISOString().split('T')[0];
+            document.getElementById('fecha').value = dateString;
+            openModal();
+        };
+        
+        calendar.appendChild(dayDiv);
+    }
+}
+
+// Mes anterior
+function previousMonth() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
+}
+
+// Mes siguiente
+function nextMonth() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+}
+
+// Cambiar vista
+function toggleView() {
+    viewMode = viewMode === 'calendar' ? 'list' : 'calendar';
+    
+    const calendarView = document.getElementById('calendarView');
+    const listView = document.getElementById('listView');
+    const toggleText = document.getElementById('viewToggleText');
+    
+    if (viewMode === 'calendar') {
+        calendarView.style.display = 'block';
+        listView.style.display = 'none';
+        toggleText.textContent = '📋 Ver Lista';
+        renderCalendar();
+    } else {
+        calendarView.style.display = 'none';
+        listView.style.display = 'block';
+        toggleText.textContent = '📅 Ver Calendario';
+        renderAppointmentsList(allAppointments);
+    }
+}
+
+// Renderizar lista de citas
+function renderAppointmentsList(appointments) {
+    const tbody = document.getElementById('appointmentsBody');
+    tbody.innerHTML = '';
+    
+    if (appointments.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="8" style="text-align:center; padding:40px;">
+                No hay citas registradas
+            </td></tr>
+        `;
+        return;
+    }
+    
+    appointments.forEach(apt => {
+        const row = `
+            <tr onclick="showAppointmentDetails(${apt.idcita})" style="cursor:pointer;">
+                <td>${apt.idcita}</td>
+                <td>${new Date(apt.fecha).toLocaleDateString('es-ES')}</td>
+                <td>${apt.hora.substring(0, 5)}</td>
+                <td>${apt.paciente_nombre || 'N/A'}</td>
+                <td>Dr(a). ${apt.medico_nombre || 'N/A'}</td>
+                <td>${apt.tiposervicio}</td>
+                <td><span class="status-badge ${apt.estado.toLowerCase()}">${apt.estado}</span></td>
+                <td onclick="event.stopPropagation();">
+                    <button class="btn-icon" onclick="editAppointment(${apt.idcita})" title="Editar">✏️</button>
+                    <button class="btn-icon" onclick="deleteAppointment(${apt.idcita})" title="Eliminar">🗑️</button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// Mostrar detalles de cita
+async function showAppointmentDetails(idCita) {
+    try {
+        const response = await fetch(`${API_URL}/citas/${idCita}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        const apt = await response.json();
+        
+        document.getElementById('appointmentDetails').innerHTML = `
+            <div class="detail-row">
+                <strong>ID Cita:</strong> <span>${apt.idcita}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Fecha:</strong> <span>${new Date(apt.fecha).toLocaleDateString('es-ES')}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Hora:</strong> <span>${apt.hora.substring(0, 5)}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Paciente:</strong> <span>${apt.paciente_nombre || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Médico:</strong> <span>Dr(a). ${apt.medico_nombre || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Tipo:</strong> <span>${apt.tiposervicio}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Estado:</strong> <span class="status-badge ${apt.estado.toLowerCase()}">${apt.estado}</span>
+            </div>
+        `;
+        
+        currentAppointment = apt;
+        document.getElementById('detailsModal').style.display = 'block';
+    } catch (error) {
+        showNotification('Error al cargar detalles', 'error');
+    }
+}
+
+// Abrir modal para crear/editar
+function openModal(appointment = null) {
+    const modal = document.getElementById('appointmentModal');
+    const form = document.getElementById('appointmentForm');
+    const title = document.getElementById('modalTitle');
+    
+    if (appointment) {
+        title.textContent = 'Editar Cita';
+        currentAppointment = appointment;
+        
+        document.getElementById('codPaciente').value = appointment.codpaciente;
+        document.getElementById('medico').value = appointment.numdocumentoemp;
+        document.getElementById('fecha').value = appointment.fecha;
+        document.getElementById('hora').value = appointment.hora;
+        document.getElementById('tipoServicio').value = appointment.tiposervicio;
+        document.getElementById('estado').value = appointment.estado;
+    } else {
+        title.textContent = 'Nueva Cita';
+        currentAppointment = null;
+        form.reset();
+    }
+    
+    modal.style.display = 'block';
+}
+
+// Cerrar modales
+function closeModal() {
+    document.getElementById('appointmentModal').style.display = 'none';
+    currentAppointment = null;
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').style.display = 'none';
+    currentAppointment = null;
+}
+
+// Editar desde detalles
+function editFromDetails() {
+    closeDetailsModal();
+    editAppointment(currentAppointment.idcita);
+}
+
+// Guardar cita
+async function saveAppointment(event) {
+    event.preventDefault();
+    
+    const patientSelect = document.getElementById('codPaciente');
+    const doctorSelect = document.getElementById('medico');
+    
+    const data = {
+        codPaciente: parseInt(patientSelect.value),
+        numDocumentoPac: parseInt(patientSelect.selectedOptions[0].dataset.documento),
+        numDocumentoEmp: parseInt(doctorSelect.selectedOptions[0].dataset.documento),
+        idEmpleado: parseInt(doctorSelect.value),
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('hora').value + ':00',
+        tipoServicio: document.getElementById('tipoServicio').value,
+        estado: document.getElementById('estado').value
+    };
+    
+    try {
+        const url = currentAppointment 
+            ? `${API_URL}/citas/${currentAppointment.idcita}`
+            : `${API_URL}/citas`;
+        const method = currentAppointment ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) throw new Error('Error al guardar');
+        
+        showNotification('Cita guardada correctamente', 'success');
+        closeModal();
+        loadAppointments();
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al guardar la cita', 'error');
+    }
+}
+
+// Editar cita
+async function editAppointment(idCita) {
+    try {
+        const response = await fetch(`${API_URL}/citas/${idCita}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const apt = await response.json();
+        openModal(apt);
+    } catch (error) {
+        showNotification('Error al cargar cita', 'error');
+    }
+}
+
+// Eliminar cita
+async function deleteAppointment(idCita) {
+    if (!confirm('¿Eliminar esta cita?')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/citas/${idCita}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) throw new Error('Error');
+        showNotification('Cita eliminada', 'success');
+        loadAppointments();
+    } catch (error) {
+        showNotification('Error al eliminar', 'error');
+    }
+}
+
+// Cancelar cita
+async function cancelAppointment() {
+    if (!confirm('¿Cancelar esta cita?')) return;
+    
+    try {
+        await fetch(`${API_URL}/citas/${currentAppointment.idcita}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ ...currentAppointment, estado: 'Cancelada' })
+        });
+        
+        showNotification('Cita cancelada', 'success');
+        closeDetailsModal();
+        loadAppointments();
+    } catch (error) {
+        showNotification('Error', 'error');
+    }
+}
+
+// Filtrar citas
+function filterAppointments() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const estado = document.getElementById('filterEstado').value;
+    const fecha = document.getElementById('filterFecha').value;
+    const medico = document.getElementById('filterMedico').value;
+    
+    const filtered = allAppointments.filter(apt => {
+        const matchSearch = apt.paciente_nombre?.toLowerCase().includes(search) ||
+                          apt.medico_nombre?.toLowerCase().includes(search);
+        const matchEstado = !estado || apt.estado === estado;
+        const matchFecha = !fecha || apt.fecha === fecha;
+        const matchMedico = !medico || apt.numdocumentoemp == medico;
+        
+        return matchSearch && matchEstado && matchFecha && matchMedico;
+    });
+    
+    renderAppointmentsList(filtered);
+}
+
+// Notificaciones
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type} show`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}

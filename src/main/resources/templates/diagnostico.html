@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Diagnósticos</title>
+    <link rel="stylesheet" href="../../../shared/css/global.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔬 Registro de Diagnósticos</h1>
+        </header>
+
+        <div class="card">
+            <h2>Nueva Consulta</h2>
+            <form id="diagnosticForm" onsubmit="saveDiagnostic(event)">
+                <div class="form-group">
+                    <label>Cita *</label>
+                    <select id="idCita" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Enfermedad *</label>
+                    <select id="idEnfermedad" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Registrar Diagnóstico</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="diagnosticos.js"></script>
+</body>
+</html>

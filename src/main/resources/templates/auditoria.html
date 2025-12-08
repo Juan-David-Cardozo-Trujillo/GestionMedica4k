@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auditoría de Accesos</title>
+    <link rel="stylesheet" href="../../../shared/css/global.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Auditoría de Accesos</h1>
+            <button class="btn btn-secondary" onclick="exportToCSV()">
+                📥 Exportar CSV
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="date" id="filterFechaInicio" onchange="filterAudit()">
+            <input type="date" id="filterFechaFin" onchange="filterAudit()">
+            <select id="filterAccion" onchange="filterAudit()">
+                <option value="">Todas las acciones</option>
+                <option value="SELECT">SELECT</option>
+                <option value="INSERT">INSERT</option>
+                <option value="UPDATE">UPDATE</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+            <input type="text" id="filterTabla" placeholder="Filtrar por tabla..." 
+                   oninput="filterAudit()">
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEvents">0</div>
+                <div class="stat-label">Total Eventos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayEvents">0</div>
+                <div class="stat-label">Hoy</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Tabla</th>
+                        <th>IP Origen</th>
+                    </tr>
+                </thead>
+                <tbody id="auditBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="auditoria.js"></script>
+</body>
+</html>
