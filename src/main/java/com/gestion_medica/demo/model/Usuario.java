@@ -25,6 +25,9 @@ public class Usuario {
     @Column(name = "numdocumento")
     private Integer numDocumento;
 
+    @Column(name = "rol", nullable = false, length = 20)
+    private String rol;
+
     @ManyToOne
     @JoinColumn(name = "numdocumento", insertable = false, updatable = false)
     private Persona persona;

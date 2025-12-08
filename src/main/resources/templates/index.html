@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIS+ - Sistema Hospitalario</title>
+    <title>HIS+ - Sistema Hospitalario Inteligente</title>
     <link rel="stylesheet" type="text/css" href="/css/style.css">
     <style>
-        /* Estilos de respaldo en caso de que el CSS externo no cargue */
         * {
             margin: 0;
             padding: 0;
@@ -17,125 +16,339 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
         }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        
-        header h1 {
-            font-size: 28px;
-            margin: 0;
-        }
-        
-        .welcome-section {
-            text-align: center;
-            padding: 50px 20px;
-        }
-        
-        .welcome-section h2 {
-            font-size: 32px;
-            color: #333;
-            margin-bottom: 15px;
-        }
-        
-        .welcome-section p {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 30px;
-        }
-        
-        .action-buttons {
+        /* Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 40px;
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
         
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            text-decoration: none;
-            border: none;
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .navbar-brand::before {
+            content: "⚕️";
+            font-size: 32px;
+        }
+        
+        .navbar-login {
+            background: #667eea;
+            color: white;
+            padding: 10px 25px;
             border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+            text-decoration: none;
             transition: all 0.3s;
             font-weight: 500;
         }
         
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
+        .navbar-login:hover {
             background: #5568d3;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .btn-secondary {
-            background: #6c757d;
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 80px 20px;
             color: white;
         }
         
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        .hero-section h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .hero-section p {
+            font-size: 22px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        
+        /* Info Cards */
+        .info-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .info-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .info-card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        
+        .info-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        /* Stats Section */
+        .stats-section {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 40px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 20px;
+        }
+        
+        .stat-number {
+            font-size: 42px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        /* Services Section */
+        .services-section {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .services-section h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        
+        .services-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .service-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .service-icon {
+            font-size: 32px;
+        }
+        
+        .service-text {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            margin-top: 40px;
+        }
+        
+        .footer p {
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 32px;
+            }
+            
+            .hero-section p {
+                font-size: 18px;
+            }
+            
+            .info-grid, .services-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Sistema Integral de Gestión Hospitalaria Inteligente (HIS+)</h1>
-        </header>
-        <main>
-            <div class="welcome-section">
-                <h2>Bienvenido al Sistema HIS+</h2>
-                <p>Gestión integral de hospitales, clínicas y centros médicos</p>
-                <div class="action-buttons">
-                    <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
-                    <a href="/usuarios/registro" class="btn btn-secondary">Registrarse</a>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            HIS+ System
+        </div>
+        <a href="/login" class="navbar-login">Iniciar Sesión</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <h1>Sistema Integral de Gestión Hospitalaria</h1>
+        <p>Atención de calidad, tecnología de vanguardia</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="info-container">
+        <!-- Info Cards -->
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-card-icon">🏥</div>
+                <h3>Red de Hospitales</h3>
+                <p>Contamos con 15 sedes hospitalarias distribuidas en todo el país, equipadas con la más alta tecnología médica para brindar atención especializada las 24 horas del día.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-icon">👨‍⚕️</div>
+                <h3>Profesionales Calificados</h3>
+                <p>Más de 2,500 profesionales de la salud altamente capacitados, incluyendo médicos especialistas, enfermeras y personal administrativo comprometidos con tu bienestar.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-card-icon">💊</div>
+                <h3>Medicamentos y Equipos</h3>
+                <p>Disponibilidad permanente de medicamentos esenciales y equipamiento médico de última generación para garantizar diagnósticos precisos y tratamientos efectivos.</p>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">150K+</div>
+                    <div class="stat-label">Pacientes Atendidos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">15</div>
+                    <div class="stat-label">Sedes Hospitalarias</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">2,500+</div>
+                    <div class="stat-label">Profesionales</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Atención Continua</div>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <!-- Services Section -->
+        <div class="services-section">
+            <h2>Nuestros Servicios</h2>
+            <div class="services-list">
+                <div class="service-item">
+                    <div class="service-icon">🔬</div>
+                    <div class="service-text">Laboratorio Clínico</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🩺</div>
+                    <div class="service-text">Medicina General</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🏥</div>
+                    <div class="service-text">Hospitalización</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🚑</div>
+                    <div class="service-text">Urgencias 24/7</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🧠</div>
+                    <div class="service-text">Neurología</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">❤️</div>
+                    <div class="service-text">Cardiología</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🦴</div>
+                    <div class="service-text">Traumatología</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">👶</div>
+                    <div class="service-text">Pediatría</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">📊</div>
+                    <div class="service-text">Imagenología</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">💉</div>
+                    <div class="service-text">Vacunación</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🧬</div>
+                    <div class="service-text">Genética</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon">🔍</div>
+                    <div class="service-text">Diagnóstico</div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 HIS+ Sistema Hospitalario. Todos los derechos reservados.</p>
+        <p>Comprometidos con tu salud y bienestar</p>
+    </footer>
+
     <script src="/js/main.js"></script>
-    <script>
-        // Verificar si el CSS se cargó correctamente
-        window.addEventListener('load', function() {
-            console.log('✓ Página cargada');
-            console.log('✓ Verificando recursos...');
-            
-            // Verificar si el CSS está cargado
-            const links = document.querySelectorAll('link[rel="stylesheet"]');
-            links.forEach(link => {
-                console.log('CSS encontrado:', link.href);
-            });
-            
-            // Verificar si los scripts están cargados
-            const scripts = document.querySelectorAll('script[src]');
-            scripts.forEach(script => {
-                console.log('JS encontrado:', script.src);
-            });
-        });
-    </script>
 </body>
 </html>
