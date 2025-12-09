@@ -4,12 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
-import java.util.Date;
+import java.sql.Date; // CAMBIO CLAVE: Usar sql.Date para compatibilidad directa
 import java.util.List;
-
-
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -30,7 +26,7 @@ public class Persona {
     private String tipoDocumento;
 
     @Column(name = "fechanacimiento", nullable = false)
-    private Date fechaNacimiento;
+    private Date fechaNacimiento; // Ahora es java.sql.Date
 
     @Column(name = "apellidopersona", nullable = false, length = 50)
     private String apellidoPersona;

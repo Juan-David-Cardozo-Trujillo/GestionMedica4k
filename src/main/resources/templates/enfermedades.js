@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api'; // Puerto correcto 8080
 let currentDisease = null;
 let allDiseases = [];
 
@@ -14,6 +14,7 @@ async function loadDiseases() {
         allDiseases = await response.json();
         renderDiseases(allDiseases);
     } catch (error) {
+        console.error(error);
         showNotification('Error al cargar enfermedades', 'error');
     }
 }
@@ -23,14 +24,16 @@ function renderDiseases(diseases) {
     tbody.innerHTML = '';
     
     diseases.forEach(disease => {
+        // CORRECCIÓN: Usar camelCase (idEnfermedad, nombreEnfermedad...)
+        // Java convierte automáticamente los atributos de la clase a JSON respetando mayúsculas/minúsculas
         tbody.innerHTML += `
             <tr>
-                <td>${disease.idenfermedad}</td>
-                <td>${disease.nombreenfermedad}</td>
-                <td>${disease.descripcionenfermedad}</td>
+                <td>${disease.idEnfermedad}</td>
+                <td>${disease.nombreEnfermedad}</td>
+                <td>${disease.descripcionEnfermedad}</td>
                 <td>
                     <button class="btn-icon" onclick='editDisease(${JSON.stringify(disease)})'>✏️</button>
-                    <button class="btn-icon" onclick="deleteDisease(${disease.idenfermedad})">🗑️</button>
+                    <button class="btn-icon" onclick="deleteDisease(${disease.idEnfermedad})">🗑️</button>
                 </td>
             </tr>
         `;
@@ -44,8 +47,9 @@ function openModal(disease = null) {
     if (disease) {
         currentDisease = disease;
         document.getElementById('modalTitle').textContent = 'Editar Enfermedad';
-        document.getElementById('nombreEnfermedad').value = disease.nombreenfermedad;
-        document.getElementById('descripcionEnfermedad').value = disease.descripcionenfermedad;
+        // CORRECCIÓN: camelCase aquí también para llenar el form
+        document.getElementById('nombreEnfermedad').value = disease.nombreEnfermedad;
+        document.getElementById('descripcionEnfermedad').value = disease.descripcionEnfermedad;
     } else {
         currentDisease = null;
         document.getElementById('modalTitle').textContent = 'Nueva Enfermedad';
@@ -63,14 +67,17 @@ async function saveDisease(event) {
     event.preventDefault();
     
     const data = {
+        // Estos nombres deben coincidir con los atributos en Enfermedad.java
         nombreEnfermedad: document.getElementById('nombreEnfermedad').value,
         descripcionEnfermedad: document.getElementById('descripcionEnfermedad').value
     };
     
     try {
+        // CORRECCIÓN: Usamos idEnfermedad (camelCase)
         const url = currentDisease 
-            ? `${API_URL}/enfermedades/${currentDisease.idenfermedad}`
+            ? `${API_URL}/enfermedades/${currentDisease.idEnfermedad}`
             : `${API_URL}/enfermedades`;
+        
         const method = currentDisease ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
@@ -83,10 +90,12 @@ async function saveDisease(event) {
         });
         
         if (!response.ok) throw new Error('Error');
+        
         showNotification('Enfermedad guardada', 'success');
         closeModal();
         loadDiseases();
     } catch (error) {
+        console.error(error);
         showNotification('Error al guardar', 'error');
     }
 }
@@ -115,8 +124,9 @@ async function deleteDisease(id) {
 function filterDiseases() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const filtered = allDiseases.filter(d => 
-        d.nombreenfermedad.toLowerCase().includes(search) ||
-        d.descripcionenfermedad.toLowerCase().includes(search)
+        // CORRECCIÓN: camelCase para el filtrado
+        d.nombreEnfermedad.toLowerCase().includes(search) ||
+        d.descripcionEnfermedad.toLowerCase().includes(search)
     );
     renderDiseases(filtered);
 }

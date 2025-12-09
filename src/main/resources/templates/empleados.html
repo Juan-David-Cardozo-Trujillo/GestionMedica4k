@@ -1,122 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gestión de Empleados</title>
-    <link rel="stylesheet" href="empleados.css">
-</head>
-<body>
+    <link rel="stylesheet" href="empleados.css" />
+  </head>
+  <body>
     <div class="container">
-        <header>
-            <h1>👨‍💼 Gestión de Empleados</h1>
-            <button class="btn btn-primary" onclick="openModal()">
-                ➕ Nuevo Empleado
-            </button>
-        </header>
+      <header>
+        <h1>👨‍💼 Gestión de Empleados</h1>
+        <button class="btn btn-primary" onclick="openModal()">
+          ➕ Nuevo Empleado
+        </button>
+      </header>
 
-        <div class="filters">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar empleado...">
-            <select id="filterCargo" onchange="filterEmployees()">
-                <option value="">Todos los cargos</option>
-                <option value="Medico">Médico</option>
-                <option value="Enfermera">Enfermera</option>
-                <option value="Administrativo">Administrativo</option>
-            </select>
-            <select id="filterSede" onchange="filterEmployees()">
-                <option value="">Todas las sedes</option>
-            </select>
-        </div>
+      <div class="filters">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 Buscar por nombre, apellido o documento..."
+          onkeyup="filterEmployees()"
+        />
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Documento</th>
-                        <th>Cargo</th>
-                        <th>Departamento</th>
-                        <th>Sede</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="employeesBody"></tbody>
-            </table>
-        </div>
+        <select id="filterCargo" onchange="filterEmployees()">
+          <option value="">Todos los cargos</option>
+          <option value="Medico">Médico</option>
+          <option value="Enfermera">Enfermera</option>
+          <option value="Administrativo">Administrativo</option>
+        </select>
+
+        <select id="filterSede" onchange="filterEmployees()">
+          <option value="">Todas las sedes</option>
+        </select>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Documento</th>
+              <th>Cargo</th>
+              <th>Departamento</th>
+              <th>Sede</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="employeesBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div id="employeeModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle">Nuevo Empleado</h2>
-            <form id="employeeForm" onsubmit="saveEmployee(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tipo Documento *</label>
-                        <select id="tipoDocumento" required>
-                            <option value="CC">CC</option>
-                            <option value="CE">CE</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Número Documento *</label>
-                        <input type="number" id="numDocumento" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nombre *</label>
-                        <input type="text" id="nombrePersona" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Apellido *</label>
-                        <input type="text" id="apellidoPersona" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Género *</label>
-                        <select id="genero" required>
-                            <option value="M">Masculino</option>
-                            <option value="F">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha Nacimiento *</label>
-                        <input type="date" id="fechaNacimiento" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Correo *</label>
-                    <input type="email" id="correo" required>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Cargo *</label>
-                        <select id="cargo" required>
-                            <option value="Medico">Médico</option>
-                            <option value="Enfermera">Enfermera</option>
-                            <option value="Administrativo">Administrativo</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Sede *</label>
-                        <select id="idSede" required></select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Departamento *</label>
-                    <select id="nombreDepartamento" required></select>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                </div>
-            </form>
-        </div>
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Nuevo Empleado</h2>
+
+        <form id="employeeForm" onsubmit="saveEmployee(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo Documento *</label>
+              <select id="tipoDocumento" required>
+                <option value="CC">Cédula de Ciudadanía</option>
+                <option value="CE">Cédula de Extranjería</option>
+                <option value="TI">Tarjeta de Identidad</option>
+                <option value="PASAPORTE">Pasaporte</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Número Documento *</label>
+              <input type="number" id="numDocumento" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre *</label>
+              <input type="text" id="nombrePersona" required />
+            </div>
+            <div class="form-group">
+              <label>Apellido *</label>
+              <input type="text" id="apellidoPersona" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Género *</label>
+              <select id="genero" required>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fecha Nacimiento *</label>
+              <input type="date" id="fechaNacimiento" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Correo *</label>
+            <input type="email" id="correo" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cargo *</label>
+              <select id="cargo" required>
+                <option value="Medico">Médico</option>
+                <option value="Enfermera">Enfermera</option>
+                <option value="Administrativo">Administrativo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sede *</label>
+              <select id="idSede" required></select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Departamento *</label>
+            <select id="nombreDepartamento" required></select>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeModal()"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <script src="empleados.js"></script>
-</body>
+  </body>
 </html>

@@ -58,4 +58,38 @@ public class EmpleadoService {
         }
         empleadoRepository.deleteById(id);
     }
+
+    // ... imports ...
+    public Empleado actualizarEmpleado(Integer idEmpleado, Integer numDocumento, Persona personaDatos, String cargo, String nomDepto, Integer idSede) {
+
+        // 1. Buscamos el Empleado existente por su llave compuesta
+        EmpleadoId id = new EmpleadoId(numDocumento, idEmpleado);
+        Empleado empleadoExistente = empleadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        // 2. Actualizamos los datos de la Persona asociada
+        Persona personaExistente = empleadoExistente.getPersona();
+        // OJO: No cambiamos el numDocumento porque es la llave primaria
+        personaExistente.setNombrePersona(personaDatos.getNombrePersona());
+        personaExistente.setApellidoPersona(personaDatos.getApellidoPersona());
+        personaExistente.setTipoDocumento(personaDatos.getTipoDocumento());
+        personaExistente.setGenero(personaDatos.getGenero());
+        personaExistente.setFechaNacimiento(personaDatos.getFechaNacimiento());
+        personaExistente.setCorreo(personaDatos.getCorreo());
+
+        // Guardamos los cambios de la persona
+        personaRepository.save(personaExistente);
+
+        // 3. Actualizamos los datos del Empleado
+        empleadoExistente.setCargo(cargo);
+
+        // Actualizamos la referencia al departamento
+        Departamento depto = new Departamento();
+        depto.setNombreDepartamento(nomDepto);
+        depto.setIdSede(idSede);
+        empleadoExistente.setDepartamento(depto);
+
+        // 4. Guardamos el empleado existente (Esto hace el UPDATE en SQL)
+        return empleadoRepository.save(empleadoExistente);
+    }
 }

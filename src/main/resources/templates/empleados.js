@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
+
 let currentEmployee = null;
 let allEmployees = [];
 let sedes = [];
@@ -9,15 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSedes();
 });
 
+// --- CARGA DE DATOS ---
+
 async function loadEmployees() {
     try {
         const response = await fetch(`${API_URL}/empleados`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
+        if (!response.ok) throw new Error('Error de red');
         allEmployees = await response.json();
         renderEmployees(allEmployees);
     } catch (error) {
-        console.error('Error:', error);
+        console.error(error);
         showNotification('Error al cargar empleados', 'error');
     }
 }
@@ -36,26 +40,33 @@ async function loadSedes() {
 
 async function loadDepartamentos(idSede) {
     try {
-        const response = await fetch(`${API_URL}/departamentos?idSede=${idSede}`, {
+        const response = await fetch(`${API_URL}/departamentos`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        departamentos = await response.json();
+        const allDepts = await response.json();
+        // Filtramos en el cliente ya que el endpoint trae todos (o ajusta tu endpoint si filtra por sede)
+        departamentos = allDepts.filter(d => d.idSede == idSede);
         populateDepartamentoSelect();
     } catch (error) {
         console.error('Error:', error);
     }
 }
 
+// --- RENDERIZADO Y SELECTS ---
+
 function populateSedeSelect() {
     const select = document.getElementById('idSede');
     select.innerHTML = '<option value="">Seleccione</option>';
     sedes.forEach(sede => {
-        select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
+        // Asegúrate que tu backend de Sede devuelva idSede y nombreSede
+        select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
     });
     
     select.onchange = function() {
         if (this.value) {
             loadDepartamentos(this.value);
+        } else {
+            document.getElementById('nombreDepartamento').innerHTML = '';
         }
     };
 }
@@ -64,7 +75,7 @@ function populateDepartamentoSelect() {
     const select = document.getElementById('nombreDepartamento');
     select.innerHTML = '<option value="">Seleccione</option>';
     departamentos.forEach(dept => {
-        select.innerHTML += `<option value="${dept.nombredepartamento}">${dept.nombredepartamento}</option>`;
+        select.innerHTML += `<option value="${dept.nombreDepartamento}">${dept.nombreDepartamento}</option>`;
     });
 }
 
@@ -73,22 +84,39 @@ function renderEmployees(employees) {
     tbody.innerHTML = '';
     
     employees.forEach(emp => {
+        // VALIDACIÓN DE NULOS Y CAMEL CASE
+        // Java devuelve: { persona: { nombrePersona: "..." }, numDocumento: 123 }
+        const nombre = emp.persona ? emp.persona.nombrePersona : '---';
+        const apellido = emp.persona ? emp.persona.apellidoPersona : '';
+        const tipoDoc = emp.persona ? emp.persona.tipoDocumento : '';
+        const numDoc = emp.numDocumento; // Propiedad directa del empleado (D mayúscula)
+
+        // Departamento
+        const deptoNombre = emp.departamento ? emp.departamento.nombreDepartamento : '---';
+        const sedeId = emp.departamento ? emp.departamento.idSede : '---';
+
+        // Buscamos el nombre de la sede usando el ID para mostrarlo bonito (opcional)
+        const sedeNombreObj = sedes.find(s => s.idSede === sedeId);
+        const sedeNombre = sedeNombreObj ? sedeNombreObj.nombreSede : sedeId;
+
         tbody.innerHTML += `
             <tr>
-                <td>${emp.idempleado}</td>
-                <td>${emp.nombrepersona} ${emp.apellidopersona}</td>
-                <td>${emp.tipodocumento} ${emp.numdocumento}</td>
+                <td>${emp.idEmpleado}</td>
+                <td>${nombre} ${apellido}</td>
+                <td>${tipoDoc} ${numDoc}</td>
                 <td>${emp.cargo}</td>
-                <td>${emp.nombredepartamento}</td>
-                <td>${emp.nombresede || 'N/A'}</td>
+                <td>${deptoNombre}</td>
+                <td>${sedeNombre}</td>
                 <td>
-                    <button class="btn-icon" onclick='editEmployee(${JSON.stringify(emp)})'>✏️</button>
-                    <button class="btn-icon" onclick="deleteEmployee(${emp.idempleado}, ${emp.numdocumento})">🗑️</button>
+                    <button class="btn-icon" onclick="editEmployee(${emp.idEmpleado}, ${emp.numDocumento})">✏️</button>
+                    <button class="btn-icon" onclick="deleteEmployee(${emp.idEmpleado}, ${emp.numDocumento})">🗑️</button>
                 </td>
             </tr>
         `;
     });
 }
+
+// --- MODALES Y FORMULARIO ---
 
 function openModal(employee = null) {
     const modal = document.getElementById('employeeModal');
@@ -97,22 +125,36 @@ function openModal(employee = null) {
     if (employee) {
         currentEmployee = employee;
         document.getElementById('modalTitle').textContent = 'Editar Empleado';
-        document.getElementById('numDocumento').value = employee.numdocumento;
-        document.getElementById('nombrePersona').value = employee.nombrepersona;
-        document.getElementById('apellidoPersona').value = employee.apellidopersona;
-        document.getElementById('tipoDocumento').value = employee.tipodocumento;
-        document.getElementById('genero').value = employee.genero;
-        document.getElementById('fechaNacimiento').value = employee.fechanacimiento;
-        document.getElementById('correo').value = employee.correo;
+        
+        // Llenar datos de Persona (usando camelCase)
+        if (employee.persona) {
+            document.getElementById('numDocumento').value = employee.numDocumento;
+            document.getElementById('nombrePersona').value = employee.persona.nombrePersona;
+            document.getElementById('apellidoPersona').value = employee.persona.apellidoPersona;
+            document.getElementById('tipoDocumento').value = employee.persona.tipoDocumento;
+            document.getElementById('genero').value = employee.persona.genero;
+            document.getElementById('fechaNacimiento').value = employee.persona.fechaNacimiento;
+            document.getElementById('correo').value = employee.persona.correo;
+        }
+
+        // Llenar datos de Empleado
         document.getElementById('cargo').value = employee.cargo;
-        document.getElementById('idSede').value = employee.idsede;
-        loadDepartamentos(employee.idsede).then(() => {
-            document.getElementById('nombreDepartamento').value = employee.nombredepartamento;
-        });
+        
+        // Lógica para cargar Sede y Departamento en cascada
+        if (employee.departamento) {
+            const idSede = employee.departamento.idSede;
+            document.getElementById('idSede').value = idSede;
+            
+            // Cargar departamentos de esa sede y luego seleccionar el correcto
+            loadDepartamentos(idSede).then(() => {
+                document.getElementById('nombreDepartamento').value = employee.departamento.nombreDepartamento;
+            });
+        }
     } else {
         currentEmployee = null;
         form.reset();
         document.getElementById('modalTitle').textContent = 'Nuevo Empleado';
+        document.getElementById('nombreDepartamento').innerHTML = ''; // Limpiar depto
     }
     
     modal.style.display = 'block';
@@ -122,11 +164,21 @@ function closeModal() {
     document.getElementById('employeeModal').style.display = 'none';
 }
 
+function editEmployee(idEmpleado, numDocumento) {
+    // Buscamos el empleado en la lista local para evitar errores de sintaxis en el HTML
+    const employee = allEmployees.find(e => e.idEmpleado === idEmpleado && e.numDocumento === numDocumento);
+    if (employee) {
+        openModal(employee);
+    }
+}
+
 async function saveEmployee(event) {
     event.preventDefault();
     
+    // Recogemos los datos del formulario
     const data = {
         persona: {
+            // Nota: numDocumento lo leemos del form, pero si es edición, el backend usará el de la URL
             numDocumento: parseInt(document.getElementById('numDocumento').value),
             nombrePersona: document.getElementById('nombrePersona').value,
             apellidoPersona: document.getElementById('apellidoPersona').value,
@@ -143,13 +195,22 @@ async function saveEmployee(event) {
     };
     
     try {
-        const url = currentEmployee 
-            ? `${API_URL}/empleados/${currentEmployee.idempleado}`
-            : `${API_URL}/empleados`;
-        const method = currentEmployee ? 'PUT' : 'POST';
+        let url, method;
+
+        // LÓGICA CLAVE: ¿Existe currentEmployee?
+        if (currentEmployee) {
+            // MODO EDICIÓN (PUT)
+            // Usamos los IDs originales guardados en currentEmployee para la URL
+            url = `${API_URL}/empleados/${currentEmployee.idEmpleado}?numDocumento=${currentEmployee.numDocumento}`;
+            method = 'PUT';
+        } else {
+            // MODO CREACIÓN (POST)
+            url = `${API_URL}/empleados`;
+            method = 'POST';
+        }
         
         const response = await fetch(url, {
-            method,
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -157,34 +218,42 @@ async function saveEmployee(event) {
             body: JSON.stringify(data)
         });
         
-        if (!response.ok) throw new Error('Error al guardar');
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText);
+        }
         
-        showNotification('Empleado guardado correctamente', 'success');
+        showNotification(currentEmployee ? 'Empleado actualizado' : 'Empleado creado', 'success');
         closeModal();
         loadEmployees();
     } catch (error) {
-        showNotification('Error al guardar empleado', 'error');
+        console.error(error);
+        showNotification('Error: ' + error.message, 'error');
     }
 }
 
-function editEmployee(employee) {
-    openModal(employee);
-}
+// --- BORRADO Y FILTROS ---
 
 async function deleteEmployee(idEmpleado, numDocumento) {
     if (!confirm('¿Eliminar este empleado?')) return;
     
     try {
+        // La URL coincide con @DeleteMapping("/{idEmpleado}") y @RequestParam("numDocumento")
         const response = await fetch(`${API_URL}/empleados/${idEmpleado}?numDocumento=${numDocumento}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         
-        if (!response.ok) throw new Error('Error');
+        if (!response.ok) {
+             const errorText = await response.text();
+             throw new Error(errorText);
+        }
+
         showNotification('Empleado eliminado', 'success');
         loadEmployees();
     } catch (error) {
-        showNotification('Error al eliminar', 'error');
+        console.error(error);
+        showNotification('Error al eliminar: ' + error.message, 'error');
     }
 }
 
@@ -194,10 +263,24 @@ function filterEmployees() {
     const sede = document.getElementById('filterSede').value;
     
     const filtered = allEmployees.filter(emp => {
-        const matchSearch = emp.nombrepersona.toLowerCase().includes(search) ||
-                          emp.apellidopersona.toLowerCase().includes(search);
+        // 1. Extraer datos de forma segura (validando nulos)
+        // OJO: Usar camelCase (nombrePersona) tal como viene del backend
+        const nombre = emp.persona ? emp.persona.nombrePersona.toLowerCase() : '';
+        const apellido = emp.persona ? emp.persona.apellidoPersona.toLowerCase() : '';
+        const empSedeId = emp.departamento ? emp.departamento.idSede : '';
+        const numDoc = emp.numDocumento ? emp.numDocumento.toString() : '';
+
+        // 2. Lógica de coincidencia
+        // Buscamos por Nombre, Apellido O Número de Documento
+        const matchSearch = nombre.includes(search) || 
+                          apellido.includes(search) || 
+                          numDoc.includes(search);
+
         const matchCargo = !cargo || emp.cargo === cargo;
-        const matchSede = !sede || emp.idsede == sede;
+        
+        // El filtro de sede compara IDs (convertimos a string para asegurar)
+        const matchSede = !sede || empSedeId.toString() === sede.toString();
+        
         return matchSearch && matchCargo && matchSede;
     });
     
@@ -209,5 +292,9 @@ function showNotification(message, type) {
     notification.className = `notification notification-${type} show`;
     notification.textContent = message;
     document.body.appendChild(notification);
-    setTimeout(() => document.body.removeChild(notification), 3000);
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
+

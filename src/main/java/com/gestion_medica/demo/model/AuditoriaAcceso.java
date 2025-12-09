@@ -1,37 +1,38 @@
 package com.gestion_medica.demo.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinColumns;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "auditoria_accesos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// ... imports y annotations ...
 public class AuditoriaAcceso {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "audit_seq_gen")
+    @SequenceGenerator(name = "audit_seq_gen", sequenceName = "public.auditoria_accesos_idevento_seq", allocationSize = 1)
     @Column(name = "idevento")
     private Integer idEvento;
 
-    // ... campos simples (ip, accion, fecha, tabla) quedan igual ...
-    // --- CAMBIO: BORRAR ESTOS TRES ---
-    // Borrar: private Integer numDocumento;
-    // Borrar: private Integer idEmpleado;
-    // Borrar: private Integer idUsuario;
-    // --- CORRECCIÓN: Objetos editables ---
+    @Column(name = "iporigen", nullable = false, length = 50)
+    private String ipOrigen;
+
+    @Column(name = "accion", nullable = false, length = 50)
+    private String accion; // SELECT, INSERT, UPDATE, DELETE
+
+    @Column(name = "fechaevento", nullable = false)
+    private LocalDateTime fechaEvento;
+
+    @Column(name = "tablaafectada", nullable = false, length = 50)
+    private String tablaAfectada;
+
+    // --- RELACIONES (Opcionales para flexibilidad) ---
+    // Relación con Empleado (Puede ser null si la acción la hace un admin no empleado)
     @ManyToOne
     @JoinColumns({
         @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento"),
@@ -39,7 +40,8 @@ public class AuditoriaAcceso {
     })
     private Empleado empleado;
 
+    // Relación con Usuario (Quien hizo la acción)
     @ManyToOne
-    @JoinColumn(name = "idusuario") // Editable
+    @JoinColumn(name = "idusuario")
     private Usuario usuario;
 }
