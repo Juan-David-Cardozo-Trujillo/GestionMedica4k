@@ -1,17 +1,17 @@
-// pacientes.js
-const API_URL = 'http://localhost:3000/api';
+// pacientes.js - VERSIÓN CORREGIDA
+const API_URL = 'http://localhost:8080'; // ✅ Puerto correcto Spring Boot
+
 let currentPatient = null;
 let allPatients = [];
 
-// Cargar pacientes al iniciar
 document.addEventListener('DOMContentLoaded', () => {
     loadPatients();
 });
 
-// Obtener todos los pacientes
+// ========== CARGAR PACIENTES ==========
 async function loadPatients() {
     try {
-        const response = await fetch(`${API_URL}/pacientes`, {
+        const response = await fetch(`${API_URL}/api/pacientes`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 'Content-Type': 'application/json'
@@ -30,7 +30,7 @@ async function loadPatients() {
     }
 }
 
-// Renderizar tabla de pacientes
+// ========== RENDERIZAR TABLA ==========
 function renderPatients(patients) {
     const tbody = document.getElementById('patientsBody');
     tbody.innerHTML = '';
@@ -57,7 +57,7 @@ function renderPatients(patients) {
                 <td>${patient.correo}</td>
                 <td>${edad} años</td>
                 <td>
-                    <button class="btn-icon" onclick='editPatient(${JSON.stringify(patient)})' 
+                    <button class="btn-icon" onclick='editPatient(${JSON.stringify(patient).replace(/'/g, "&#39;")})' 
                             title="Editar">✏️</button>
                     <button class="btn-icon" onclick="deletePatient(${patient.codpaciente}, ${patient.numdocumento})" 
                             title="Eliminar">🗑️</button>
@@ -68,8 +68,9 @@ function renderPatients(patients) {
     });
 }
 
-// Calcular edad
+// ========== CALCULAR EDAD ==========
 function calcularEdad(fechaNacimiento) {
+    if (!fechaNacimiento) return 'N/A';
     const hoy = new Date();
     const nacimiento = new Date(fechaNacimiento);
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
@@ -82,7 +83,7 @@ function calcularEdad(fechaNacimiento) {
     return edad;
 }
 
-// Abrir modal
+// ========== ABRIR MODAL ==========
 function openModal(patient = null) {
     const modal = document.getElementById('patientModal');
     const form = document.getElementById('patientForm');
@@ -92,9 +93,9 @@ function openModal(patient = null) {
         title.textContent = 'Editar Paciente';
         currentPatient = patient;
         
-        // Llenar formulario con datos existentes
+        // Llenar formulario
         document.getElementById('numDocumento').value = patient.numdocumento;
-        document.getElementById('numDocumento').disabled = true; // No editable
+        document.getElementById('numDocumento').disabled = true;
         document.getElementById('nombrePersona').value = patient.nombrepersona;
         document.getElementById('apellidoPersona').value = patient.apellidopersona;
         document.getElementById('tipoDocumento').value = patient.tipodocumento;
@@ -112,23 +113,24 @@ function openModal(patient = null) {
     modal.style.display = 'block';
 }
 
-// Cerrar modal
+// ========== CERRAR MODAL ==========
 function closeModal() {
     document.getElementById('patientModal').style.display = 'none';
     document.getElementById('patientForm').reset();
     currentPatient = null;
 }
 
-// Guardar paciente
+// ========== GUARDAR PACIENTE ==========
 async function savePatient(event) {
     event.preventDefault();
     
+    // ✅ Estructura que coincide con el backend
     const patientData = {
         persona: {
             numDocumento: parseInt(document.getElementById('numDocumento').value),
+            tipoDocumento: document.getElementById('tipoDocumento').value,
             nombrePersona: document.getElementById('nombrePersona').value.trim(),
             apellidoPersona: document.getElementById('apellidoPersona').value.trim(),
-            tipoDocumento: document.getElementById('tipoDocumento').value,
             genero: document.getElementById('genero').value,
             fechaNacimiento: document.getElementById('fechaNacimiento').value,
             correo: document.getElementById('correo').value.trim()
@@ -140,8 +142,8 @@ async function savePatient(event) {
     
     try {
         const url = currentPatient 
-            ? `${API_URL}/pacientes/${currentPatient.codpaciente}`
-            : `${API_URL}/pacientes`;
+            ? `${API_URL}/api/pacientes/${currentPatient.codpaciente}/${currentPatient.numdocumento}`
+            : `${API_URL}/api/pacientes`;
         
         const method = currentPatient ? 'PUT' : 'POST';
         
@@ -156,7 +158,7 @@ async function savePatient(event) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al guardar');
+            throw new Error(error.mensaje || 'Error al guardar');
         }
         
         showNotification(
@@ -172,19 +174,19 @@ async function savePatient(event) {
     }
 }
 
-// Editar paciente
+// ========== EDITAR PACIENTE ==========
 function editPatient(patient) {
     openModal(patient);
 }
 
-// Eliminar paciente
+// ========== ELIMINAR PACIENTE ==========
 async function deletePatient(codPaciente, numDocumento) {
     if (!confirm('¿Está seguro de eliminar este paciente?\n\nEsta acción no se puede deshacer.')) {
         return;
     }
     
     try {
-        const response = await fetch(`${API_URL}/pacientes/${codPaciente}?numDocumento=${numDocumento}`, {
+        const response = await fetch(`${API_URL}/api/pacientes/${codPaciente}/${numDocumento}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -203,7 +205,7 @@ async function deletePatient(codPaciente, numDocumento) {
     }
 }
 
-// Filtrar pacientes
+// ========== FILTRAR PACIENTES ==========
 function filterPatients() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const sedeFilter = document.getElementById('filterSede').value;
@@ -215,8 +217,7 @@ function filterPatients() {
             patient.numdocumento.toString().includes(searchTerm) ||
             patient.correo.toLowerCase().includes(searchTerm);
         
-        // Si hay filtro de sede, aplicarlo (requiere endpoint adicional)
-        const matchesSede = !sedeFilter || true; // Implementar según tu lógica
+        const matchesSede = !sedeFilter || true;
         
         return matchesSearch && matchesSede;
     });
@@ -224,21 +225,18 @@ function filterPatients() {
     renderPatients(filtered);
 }
 
-// Mostrar notificaciones
+// ========== NOTIFICACIONES ==========
 function showNotification(message, type = 'info') {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
     document.body.appendChild(notification);
     
-    // Mostrar notificación
     setTimeout(() => {
         notification.classList.add('show');
     }, 100);
     
-    // Ocultar y eliminar después de 3 segundos
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -247,7 +245,7 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Cerrar modal al hacer clic fuera
+// ========== CERRAR MODAL AL HACER CLIC FUERA ==========
 window.onclick = function(event) {
     const modal = document.getElementById('patientModal');
     if (event.target === modal) {

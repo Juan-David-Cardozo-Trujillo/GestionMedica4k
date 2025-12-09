@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,7 +25,9 @@ import lombok.NoArgsConstructor;
 public class Paciente {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    // CAMBIO: Usamos SEQUENCE en lugar de IDENTITY
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "paciente_seq_gen")
+    @SequenceGenerator(name = "paciente_seq_gen", sequenceName = "pacientes_codpaciente_seq", allocationSize = 1)
     @Column(name = "codpaciente")
     private Integer codPaciente;
 
