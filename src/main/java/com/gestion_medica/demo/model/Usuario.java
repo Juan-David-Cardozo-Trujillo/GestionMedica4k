@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class Usuario {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idusuario")
     private Integer idUsuario;
 
@@ -22,13 +23,10 @@ public class Usuario {
     @Column(name = "contrasenaencriptada", nullable = false, length = 255)
     private String contrasenaEncriptada;
 
-    @Column(name = "numdocumento")
-    private Integer numDocumento;
-
-    @Column(name = "rol", nullable = false, length = 20)
+    @Column(name = "rol", nullable = false, length = 50)
     private String rol;
 
     @ManyToOne
-    @JoinColumn(name = "numdocumento", insertable = false, updatable = false)
+    @JoinColumn(name = "numdocumento")
     private Persona persona;
 }

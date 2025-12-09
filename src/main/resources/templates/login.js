@@ -1,11 +1,11 @@
-// login.js
+// login.js - Versión REST API
 const API_URL = 'http://localhost:8080';
 
 // Verificar si ya hay sesión activa
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        window.location.href = 'dashboard.html';
+    const usuario = localStorage.getItem('usuario');
+    if (usuario) {
+        window.location.href = '/dashboard';
     }
 });
 
@@ -44,77 +44,46 @@ async function handleLogin(event) {
     btnLogin.disabled = true;
     btnText.style.display = 'none';
     btnLoader.style.display = 'inline-block';
-    const tokenUsuarioData = {
-        nombreUsuario: username,
-        password: password,
-    };
 
-try {
-        
-        const response = await fetch(`${API_URL}/login`, {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(tokenUsuarioData)
+    try {
+        const response = await fetch(`${API_URL}/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nombreUsuario: username,
+                password: password
+            })
         });
 
-        const resultadoLogin = await response.json();
+        const data = await response.json();
         
-        
-        console.log('Respuesta del servidor:', resultadoLogin, 'Status:', response.status);
+        console.log('Respuesta del servidor:', data);
 
-        if (response.ok) { 
+        if (data.ok) {
+            // Guardar información del usuario en localStorage
+            //localStorage.setItem('usuario', JSON.stringify(data.usuario));
+            localStorage.setItem('userRole', data.usuario.rol);
+            //localStorage.setItem('userName', data.usuario.nombreUsuario);
+            //localStorage.setItem('userId', data.usuario.idUsuario);
             
-            console.log('Login exitoso para usuario:', usuario);
-            localStorage.setItem('rolUsuario', resultadoLogin.rol);
-            window.location.href = 'dashboard.html';
-
-        } else {
-            
-            const mensajeError = resultadoLogin.mensaje || 'Usuario o Contraseña incorrecta.';
-            console.error('Error de autenticación:', mensajeError);
-            alert(mensajeError); 
-        }
-
-    } catch (error) {
-        
-        console.error('Error durante la comunicación con el servidor:', error);
-        alert('No se pudo conectar con el servicio de autenticación. Verifica tu conexión.');
-    }
- 
-
-        // Si llegamos aquí y la respuesta fue OK o redirigida a otro lado (dashboard), es éxito.
-        if (response.ok) {
-            // Login exitoso
-            
-            // ... Aquí va tu lógica de obtener datos (/api/usuarios/me) ...
-            // ESTA PARTE QUE HICISTE ES GENIAL, MUY BUENA IDEA
-            const userResponse = await fetch(`${API_URL}/api/usuarios/me`, {
-                 credentials: 'include' // Importante para enviar la cookie recién creada
-            });
-
-            if (userResponse.ok) {
-                const userData = await userResponse.json();
-                // ... guardar en localStorage ...
-                
-                showAlert('¡Inicio de sesión exitoso!', 'success');
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html'; // Ojo: Asegúrate que sea .html o la ruta de Thymeleaf (/dashboard)
-                }, 1000);
-            } else {
-                 console.error("No se pudieron cargar los datos del usuario");
-                 // Aún así redirigimos porque el login en sí fue exitoso
-                 window.location.href = 'dashboard.html';
+            if (rememberMe) {
+                localStorage.setItem('rememberMe', 'true');
             }
-        } 
-
+            
+            showAlert('¡Inicio de sesión exitoso!', 'success');
+            
+            
+            window.location.href = 'dashboard.html';
+            
+        } else {
+            showAlert(data.mensaje || 'Usuario o contraseña incorrectos', 'error');
+        }
+        
     } catch (error) {
         console.error('Error:', error);
-        // Aquí caerá si lanzamos el error de 'Credenciales incorrectas' arriba
-        const mensaje = error.message === 'Credenciales incorrectas' 
-            ? 'Usuario o contraseña incorrectos' 
-            : 'Error de conexión con el servidor';
-            
-        showAlert(mensaje, 'error');
+        showAlert('Error de conexión con el servidor', 'error');
     } finally {
         // Restaurar botón
         btnLogin.disabled = false;

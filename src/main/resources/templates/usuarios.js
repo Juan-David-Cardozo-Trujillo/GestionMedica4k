@@ -216,7 +216,7 @@ async function saveUsuario(event) {
     try {
         const url = currentUsuario 
             ? `${API_URL}/api/usuarios/${currentUsuario.idusuario}`
-            : `${API_URL}/api/usuarios`;
+            : `${API_URL}/api/usuarios/crear`;
         
         const method = currentUsuario ? 'PUT' : 'POST';
         

@@ -5,6 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.util.Date;
+import java.util.List;
+
+
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "persona")
@@ -24,7 +30,7 @@ public class Persona {
     private String tipoDocumento;
 
     @Column(name = "fechanacimiento", nullable = false)
-    private LocalDate fechaNacimiento;
+    private Date fechaNacimiento;
 
     @Column(name = "apellidopersona", nullable = false, length = 50)
     private String apellidoPersona;
@@ -34,4 +40,8 @@ public class Persona {
 
     @Column(name = "correo", nullable = false, length = 50)
     private String correo;
+
+    @OneToMany(mappedBy = "persona", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Usuario> usuarios = new java.util.ArrayList<>();
 }

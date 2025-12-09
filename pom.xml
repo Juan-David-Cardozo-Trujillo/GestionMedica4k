@@ -17,20 +17,6 @@
     <name>Sistema HIS+</name>
     <description>Sistema Integral de Gestión Hospitalaria Inteligente</description>
     
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
-    
     <properties>
         <java.version>21</java.version>
     </properties>
@@ -56,10 +42,7 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
+        <!-- REMOVIDO: spring-boot-starter-security -->
 
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -79,11 +62,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!-- REMOVIDO: spring-security-test -->
     </dependencies>
 
     <build>

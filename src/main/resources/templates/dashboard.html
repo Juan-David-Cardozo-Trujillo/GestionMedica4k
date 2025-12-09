@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - HIS+</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
     <style>
       * {
         margin: 0;
@@ -288,8 +287,8 @@
         <div class="user-info">
           <div class="user-avatar">👤</div>
           <div class="user-details">
-            <h4 th:text="${username}">Usuario</h4>
-            <span class="user-role" th:text="${userRole}">Rol</span>
+            <h4 id="userName">Usuario</h4>
+            <span class="user-role" id="userRole">Rol</span>
           </div>
         </div>
 
@@ -298,11 +297,9 @@
         </nav>
 
         <div class="sidebar-footer">
-          <form th:action="@{/logout}" method="post" style="margin: 0">
-            <button type="submit" class="logout-btn">
-              <span>🚪</span> Cerrar Sesión
-            </button>
-          </form>
+          <button type="button" class="logout-btn" onclick="logout()">
+            <span>🚪</span> Cerrar Sesión
+          </button>
         </div>
       </aside>
 
@@ -330,11 +327,20 @@
 
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
 
-    <script th:inline="javascript">
-      /*<![CDATA[*/
-      const userRole = /*[[${userRole}]]*/ "Usuario";
-      const userName = /*[[${username}]]*/ "Usuario";
-      /*]]>*/
+    <script>
+      // Cargar información del usuario desde localStorage
+      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+      const userRole = localStorage.getItem('userRole') || 'Usuario';
+      const userName = localStorage.getItem('userName') || 'Usuario';
+
+      // Verificar si hay sesión
+      if (!usuario.idUsuario) {
+        window.location.href = '/login';
+      }
+
+      // Mostrar información del usuario
+      document.getElementById('userName').textContent = userName;
+      document.getElementById('userRole').textContent = userRole;
 
       // Configuración de roles y menús
       const roleMenus = {
@@ -475,6 +481,33 @@
         };
         document.getElementById("currentDate").textContent =
           now.toLocaleDateString("es-ES", options);
+      }
+
+      // Función de logout
+      async function logout() {
+        if (confirm('¿Está seguro de cerrar sesión?')) {
+          try {
+            // Llamar al endpoint de logout (opcional)
+            await fetch('http://localhost:8080/api/logout', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+          } catch (error) {
+            console.error('Error en logout:', error);
+          } finally {
+            // Limpiar localStorage
+            localStorage.removeItem('usuario');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('rememberMe');
+            
+            // Redirigir al login
+            window.location.href = '/login';
+          }
+        }
       }
 
       // Inicializar

@@ -24,6 +24,7 @@ public class PersonaService {
     }
 
     public Persona save(Persona persona) {
+        System.out.println("Guardando persona: " + persona.getApellidoPersona());
         return repository.save(persona);
     }
 

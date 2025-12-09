@@ -1,48 +1,78 @@
 package com.gestion_medica.demo.control;
 
+import com.gestion_medica.demo.model.Usuario;
+import com.gestion_medica.demo.service.UsuarioService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import com.gestion_medica.demo.model.Usuario;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
+@Controller
 public class HomeController {
+
+    @Autowired
+    private UsuarioService usuarioService;
 
     @GetMapping("/")
     public String index() {
         return "index";
     }
 
-    @PostMapping("/login")
-    public String login() {
-        return "redirect:/dashboard";
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-
-        String role = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .findFirst()
-                .orElse("ROLE_Usuario")
-                .replace("ROLE_", "");
-
-        model.addAttribute("username", username);
-        model.addAttribute("userRole", role);
-
+    public String dashboard() {
         return "dashboard";
     }
 
-    // --- IMPORTANTE ---
-    // He borrado TODOS los métodos que ya tienen su propio controlador
-    // (reportes, sedes, departamentos, usuarios/registro, etc).
-    // Si dejas alguno duplicado aquí y en otro controlador, Spring fallará.
-    // El método registro() QUE ESTABA AQUÍ, LO BORRÉ.
+    /**
+     * Endpoint REST para login
+     */
+    @PostMapping("/api/login")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
+        String nombreUsuario = credentials.get("nombreUsuario");
+        String password = credentials.get("password");
+
+        Map<String, Object> response = new HashMap<>();
+
+        Optional<Usuario> usuarioOpt = usuarioService.login(nombreUsuario, password);
+
+        if (usuarioOpt.isPresent()) {
+            Usuario usuario = usuarioOpt.get();
+            response.put("success", true);
+            response.put("mensaje", "Login exitoso");
+            response.put("usuario", Map.of(
+                    "idUsuario", usuario.getIdUsuario(),
+                    "nombreUsuario", usuario.getNombreUsuario(),
+                    "rol", usuario.getRol(),
+                    "numDocumento", usuario.getPersona().getNumDocumento()
+            ));
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("mensaje", "Usuario o contraseña incorrectos");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
+
+    /**
+     * Endpoint REST para logout
+     */
+    @PostMapping("/api/logout")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> logout() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("mensaje", "Logout exitoso");
+        return ResponseEntity.ok(response);
+    }
 }
