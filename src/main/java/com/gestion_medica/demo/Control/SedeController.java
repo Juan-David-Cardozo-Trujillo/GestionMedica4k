@@ -28,8 +28,8 @@ public class SedeController {
         
         for (SedeHospitalaria sede : sedes) {
             Map<String, Object> sedeData = new HashMap<>();
-            sedeData.put("idsede", sede.getIdSede());
-            sedeData.put("nombresede", sede.getNombreSede());
+            sedeData.put("idSede", sede.getIdSede());
+            sedeData.put("nombreSede", sede.getNombreSede());
             response.add(sedeData);
         }
         

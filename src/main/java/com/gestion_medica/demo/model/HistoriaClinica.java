@@ -1,13 +1,20 @@
 package com.gestion_medica.demo.model;
 
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,7 +25,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// ... imports y annotations ...
 public class HistoriaClinica {
 
     @Id
@@ -26,14 +32,23 @@ public class HistoriaClinica {
     @Column(name = "codhistoria")
     private Integer codHistoria;
 
-    // --- CAMBIO: BORRAR ESTOS DOS ---
-    // Borrar: private Integer codPaciente;
-    // Borrar: private Integer numDocumento;
-    // --- CORRECCIÓN: Objeto editable ---
+    @Column(name = "codpaciente")
+    private Integer codPaciente;
+
+    @Column(name = "numdocumento")
+    private Integer numDocumento;
+
+    // Relación con Paciente usando llave compuesta
     @ManyToOne
     @JoinColumns({
-        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente"),
-        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento")
+        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente", insertable = false, updatable = false),
+        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento", insertable = false, updatable = false)
     })
+    @JsonIgnore
     private Paciente paciente;
+
+    // Relación con diagnósticos registrados
+    @OneToMany(mappedBy = "historiaClinica", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<HistoriaClinicaRegistraDiagnostica> registroDiagnostica;
 }

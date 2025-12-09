@@ -1,10 +1,9 @@
 // historias-clinicas.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 let currentHistoria = null;
 let allHistorias = [];
 let pacientes = [];
 let enfermedades = [];
-let citas = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadHistorias();
@@ -61,9 +60,11 @@ function populatePacienteSelect() {
     const select = document.getElementById('codPaciente');
     select.innerHTML = '<option value="">Seleccione un paciente</option>';
     pacientes.forEach(p => {
+        const nombre = p.persona ? `${p.persona.nombrePersona} ${p.persona.apellidoPersona}` : 'Sin nombre';
+        const numDoc = p.persona ? p.persona.numDocumento : 'N/A';
         select.innerHTML += `
-            <option value="${p.codpaciente}" data-documento="${p.numdocumento}">
-                ${p.nombrepersona} ${p.apellidopersona} - ${p.numdocumento}
+            <option value="${p.codPaciente}">
+                ${nombre} - ${numDoc}
             </option>
         `;
     });
@@ -72,10 +73,12 @@ function populatePacienteSelect() {
 // Poblar filtro de pacientes
 function populatePacienteFilter() {
     const select = document.getElementById('filterPaciente');
+    select.innerHTML = '<option value="">Todos los pacientes</option>';
     pacientes.forEach(p => {
+        const nombre = p.persona ? `${p.persona.nombrePersona} ${p.persona.apellidoPersona}` : 'Sin nombre';
         select.innerHTML += `
-            <option value="${p.codpaciente}">
-                ${p.nombrepersona} ${p.apellidopersona}
+            <option value="${p.codPaciente}">
+                ${nombre}
             </option>
         `;
     });
@@ -88,27 +91,35 @@ function renderHistorias(historias) {
     
     if (historias.length === 0) {
         tbody.innerHTML = `
-            <tr><td colspan="6" style="text-align:center; padding:40px;">
-                No hay historias clínicas registradas
-            </td></tr>
+            <tr>
+                <td colspan="6" style="text-align:center; padding:60px; color:#999; font-size:16px;">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                        <span style="font-size:48px;">📋</span>
+                        <strong>No hay historias clínicas registradas</strong>
+                        <span style="font-size:14px; color:#aaa;">Haz clic en "Nueva Historia Clínica" para crear una</span>
+                    </div>
+                </td>
+            </tr>
         `;
         return;
     }
     
     historias.forEach(historia => {
-        const edad = calcularEdad(historia.fechanacimiento);
-        const fecha = new Date(historia.fechacreacion || Date.now()).toLocaleDateString('es-ES');
+        const paciente = historia.paciente || {};
+        const nombre = paciente.nombrePersona ? `${paciente.nombrePersona} ${paciente.apellidoPersona}` : 'N/A';
+        const edad = calcularEdad(paciente.fechaNacimiento);
+        const fecha = new Date(historia.fechaCreacion || Date.now()).toLocaleDateString('es-ES');
         
         tbody.innerHTML += `
-            <tr onclick="showDetails(${historia.codhistoria})">
-                <td>${historia.codhistoria}</td>
-                <td>${historia.paciente_nombre || 'N/A'}</td>
-                <td>${historia.numdocumento}</td>
-                <td>${edad} años</td>
+            <tr onclick="showDetails(${historia.codigoHistoria})">
+                <td>${historia.codigoHistoria}</td>
+                <td>${nombre}</td>
+                <td>${paciente.numDocumento || 'N/A'}</td>
+                <td>${edad || 'N/A'}</td>
                 <td>${fecha}</td>
                 <td onclick="event.stopPropagation();">
-                    <button class="btn-icon" onclick="showDetails(${historia.codhistoria})" title="Ver">👁️</button>
-                    <button class="btn-icon" onclick="deleteHistoria(${historia.codhistoria})" title="Eliminar">🗑️</button>
+                    <button class="btn-icon" onclick="showDetails(${historia.codigoHistoria})" title="Ver">👁️</button>
+                    <button class="btn-icon" onclick="deleteHistoria(${historia.codigoHistoria})" title="Eliminar">🗑️</button>
                 </td>
             </tr>
         `;
@@ -149,10 +160,17 @@ function closeModal() {
 async function saveHistoria(event) {
     event.preventDefault();
     
-    const select = document.getElementById('codPaciente');
+    const codPaciente = parseInt(document.getElementById('codPaciente').value);
+    const observaciones = document.getElementById('observaciones').value;
+    
+    if (!codPaciente) {
+        showNotification('Por favor seleccione un paciente', 'error');
+        return;
+    }
+    
     const data = {
-        codPaciente: parseInt(select.value),
-        numDocumento: parseInt(select.selectedOptions[0].dataset.documento)
+        codPaciente: codPaciente,
+        observaciones: observaciones
     };
     
     try {
@@ -179,11 +197,13 @@ async function saveHistoria(event) {
 }
 
 // Mostrar detalles
-async function showDetails(codHistoria) {
+async function showDetails(codigoHistoria) {
     try {
-        const response = await fetch(`${API_URL}/historias-clinicas/${codHistoria}`, {
+        const response = await fetch(`${API_URL}/historias-clinicas/${codigoHistoria}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
+        
+        if (!response.ok) throw new Error('Error al cargar');
         
         const historia = await response.json();
         currentHistoria = historia;
@@ -191,29 +211,33 @@ async function showDetails(codHistoria) {
         // Registrar acceso de lectura en auditoría
         await registrarAuditoria('SELECT', 'historias-clinicas');
         
+        const paciente = historia.paciente || {};
+        const nombre = paciente.nombrePersona ? `${paciente.nombrePersona} ${paciente.apellidoPersona}` : 'N/A';
+        const edad = calcularEdad(paciente.fechaNacimiento);
+        
         document.getElementById('historiaDetalles').innerHTML = `
             <div class="detail-row">
-                <strong>Código Historia:</strong> <span>${historia.codhistoria}</span>
+                <strong>Código Historia:</strong> <span>${historia.codigoHistoria}</span>
             </div>
             <div class="detail-row">
-                <strong>Paciente:</strong> <span>${historia.paciente_nombre || 'N/A'}</span>
+                <strong>Paciente:</strong> <span>${nombre}</span>
             </div>
             <div class="detail-row">
-                <strong>Documento:</strong> <span>${historia.numdocumento}</span>
+                <strong>Documento:</strong> <span>${paciente.numDocumento || 'N/A'}</span>
             </div>
             <div class="detail-row">
-                <strong>Edad:</strong> <span>${calcularEdad(historia.fechanacimiento)} años</span>
+                <strong>Edad:</strong> <span>${edad || 'N/A'} años</span>
             </div>
             <div class="detail-row">
-                <strong>Género:</strong> <span>${historia.genero === 'M' ? 'Masculino' : 'Femenino'}</span>
+                <strong>Fecha de Creación:</strong> <span>${new Date(historia.fechaCreacion).toLocaleDateString('es-ES')}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Observaciones:</strong> <span>${historia.observaciones || 'Sin observaciones'}</span>
             </div>
         `;
         
         // Cargar diagnósticos
-        await loadDiagnosticos(codHistoria);
-        
-        // Cargar citas del paciente
-        await loadCitasPaciente(historia.codpaciente);
+        renderDiagnosticos(historia.diagnosticos || []);
         
         document.getElementById('detallesModal').style.display = 'block';
     } catch (error) {
@@ -222,60 +246,26 @@ async function showDetails(codHistoria) {
     }
 }
 
-// Cargar diagnósticos
-async function loadDiagnosticos(codHistoria) {
-    try {
-        const response = await fetch(`${API_URL}/historias-clinicas/${codHistoria}/diagnosticos`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        
-        const diagnosticos = await response.json();
-        const container = document.getElementById('diagnosticosList');
-        
-        if (diagnosticos.length === 0) {
-            container.innerHTML = '<p style="color:#999; text-align:center;">No hay diagnósticos registrados</p>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        diagnosticos.forEach(diag => {
-            container.innerHTML += `
-                <div class="diagnostico-item">
-                    <strong>${diag.nombreenfermedad}</strong>
-                    <p>Fecha: ${new Date(diag.fecharegistro).toLocaleDateString('es-ES')}</p>
-                    <p>Cita ID: ${diag.idcita}</p>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-// Cargar citas del paciente
-async function loadCitasPaciente(codPaciente) {
-    try {
-        const response = await fetch(`${API_URL}/citas?codPaciente=${codPaciente}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        
-        citas = await response.json();
-        populateCitasSelect();
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-// Poblar select de citas
-function populateCitasSelect() {
-    const select = document.getElementById('idCita');
-    select.innerHTML = '<option value="">Seleccione una cita</option>';
+// Renderizar diagnósticos
+function renderDiagnosticos(diagnosticos) {
+    const container = document.getElementById('diagnosticosList');
     
-    citas.filter(c => c.estado === 'Tomada').forEach(c => {
-        select.innerHTML += `
-            <option value="${c.idcita}">
-                ${new Date(c.fecha).toLocaleDateString('es-ES')} - ${c.hora.substring(0,5)} - ${c.tiposervicio}
-            </option>
+    if (!diagnosticos || diagnosticos.length === 0) {
+        container.innerHTML = '<p style="color:#999; text-align:center;">No hay diagnósticos registrados</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    diagnosticos.forEach(diag => {
+        const nombreEnfermedad = diag.nombreEnfermedad || 'Enfermedad desconocida';
+        const fecha = new Date(diag.fechaRegistro).toLocaleDateString('es-ES');
+        
+        container.innerHTML += `
+            <div class="diagnostico-item">
+                <strong>${nombreEnfermedad}</strong>
+                <p>Descripción: ${diag.descripcion || 'N/A'}</p>
+                <p>Fecha: ${fecha}</p>
+            </div>
         `;
     });
 }
@@ -367,10 +357,14 @@ function filterHistorias() {
     const paciente = document.getElementById('filterPaciente').value;
     
     const filtered = allHistorias.filter(h => {
-        const matchSearch = h.codhistoria.toString().includes(search) ||
-                          (h.paciente_nombre || '').toLowerCase().includes(search) ||
-                          h.numdocumento.toString().includes(search);
-        const matchPaciente = !paciente || h.codpaciente == paciente;
+        const pacienteData = h.paciente || {};
+        const nombre = pacienteData.nombrePersona ? `${pacienteData.nombrePersona} ${pacienteData.apellidoPersona}` : '';
+        
+        const matchSearch = h.codigoHistoria.toString().includes(search) ||
+                          nombre.toLowerCase().includes(search) ||
+                          (pacienteData.numDocumento ? pacienteData.numDocumento.toString().includes(search) : false);
+        
+        const matchPaciente = !paciente || (pacienteData.codPaciente && pacienteData.codPaciente.toString() === paciente);
         
         return matchSearch && matchPaciente;
     });
@@ -385,4 +379,27 @@ function showNotification(message, type) {
     notification.textContent = message;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
+}
+
+// Registrar auditoría
+async function registrarAuditoria(accion, tabla) {
+    try {
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        
+        await fetch(`${API_URL}/auditoria/registrar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                accion: accion,
+                tabla: tabla,
+                ipOrigen: 'Web-Client',
+                idUsuario: usuario.idUsuario || null
+            })
+        });
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
+    }
 }

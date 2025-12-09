@@ -45,12 +45,17 @@ function renderSedesGrid(sedes) {
     sedes.forEach(sede => {
         const card = document.createElement('div');
         card.className = 'sede-card';
+        
+        // Validación defensiva para campos undefined
+        const nombreSede = sede.nombreSede || 'Sin nombre';
+        const idSede = sede.idSede || '';
+        
         card.innerHTML = `
             <div class="sede-card-icon">🏥</div>
-            <h3>${sede.nombreSede}</h3>
-            <p class="sede-id">ID: ${sede.idSede}</p>
+            <h3>${nombreSede}</h3>
+            <p class="sede-id">ID: ${idSede}</p>
             <div class="sede-card-actions">
-                <button class="btn btn-primary" onclick="openEditModal(${sede.idSede}, '${sede.nombreSede.replace(/'/g, "\\'")}')">
+                <button class="btn btn-primary" onclick="openEditModal(${idSede}, '${nombreSede.replace(/'/g, "\\'")}')">
                     ✏️ Editar
                 </button>
             </div>
@@ -124,10 +129,12 @@ async function updateSede(event) {
 function filterSedes() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     
-    const filtered = allSedes.filter(sede => 
-        sede.nombreSede.toLowerCase().includes(search) ||
-        sede.idSede.toString().includes(search)
-    );
+    const filtered = allSedes.filter(sede => {
+        const nombreSede = (sede.nombreSede || '').toLowerCase();
+        const idSede = (sede.idSede || '').toString();
+        
+        return nombreSede.includes(search) || idSede.includes(search);
+    });
     
     renderSedesGrid(filtered);
 }
