@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="usuarios.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👥 Gestión de Usuarios</h1>
+            <button class="btn btn-primary" onclick="openModal()">
+                ➕ Nuevo Usuario
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar usuario..." 
+                   oninput="filterUsuarios()">
+            <select id="filterRol" onchange="filterUsuarios()">
+                <option value="">Todos los roles</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Medico">Médico</option>
+                <option value="Secretaria">Secretaria</option>
+                <option value="TecnicoMantenimiento">Técnico Mantenimiento</option>
+                <option value="AsistenteBodega">Asistente Bodega</option>
+            </select>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsuarios">0</div>
+                <div class="stat-label">Total Usuarios</div>
+            </div>
+            <div class="stat-card admin">
+                <div class="stat-number" id="totalAdmins">0</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card medico">
+                <div class="stat-number" id="totalMedicos">0</div>
+                <div class="stat-label">Médicos</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Nombre Completo</th>
+                        <th>Documento</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usuariosBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Crear/Editar -->
+    <div id="usuarioModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nuevo Usuario</h2>
+            <form id="usuarioForm" onsubmit="saveUsuario(event)">
+                
+                <h3 class="section-title">📋 Datos de Persona</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo Documento *</label>
+                        <select id="tipoDocumento" required>
+                            <option value="">Seleccione</option>
+                            <option value="CC">Cédula de Ciudadanía</option>
+                            <option value="CE">Cédula de Extranjería</option>
+                            <option value="TI">Tarjeta de Identidad</option>
+                            <option value="PA">Pasaporte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Documento *</label>
+                        <input type="number" id="numDocumento" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="nombrePersona" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Apellido *</label>
+                        <input type="text" id="apellidoPersona" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Género *</label>
+                        <select id="genero" required>
+                            <option value="">Seleccione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento *</label>
+                        <input type="date" id="fechaNacimiento" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" id="correo" required>
+                </div>
+
+                <h3 class="section-title">🔐 Datos de Usuario</h3>
+
+                <div class="form-group">
+                    <label>Nombre de Usuario *</label>
+                    <input type="text" id="nombreUsuario" required 
+                           placeholder="Sin espacios, solo letras y números">
+                </div>
+
+                <div class="form-group">
+                    <label>Contraseña *</label>
+                    <input type="password" id="contrasena" required 
+                           placeholder="Mínimo 6 caracteres">
+                    <small class="form-hint">La contraseña será encriptada automáticamente</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Rol del Usuario *</label>
+                    <select id="rol" required>
+                        <option value="">Seleccione un rol</option>
+                        <option value="Administrador">👨‍💼 Administrador</option>
+                        <option value="Medico">👨‍⚕️ Médico</option>
+                        <option value="Secretaria">👩‍💼 Secretaria</option>
+                        <option value="TecnicoMantenimiento">🔧 Técnico Mantenimiento</option>
+                        <option value="AsistenteBodega">📦 Asistente Bodega</option>
+                    </select>
+                </div>
+
+                <div class="permissions-info" id="permissionsInfo"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="usuarios.js"></script>
+</body>
+</html>

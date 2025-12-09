@@ -1,5 +1,7 @@
 package com.gestion_medica.demo.control;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -7,7 +9,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+import com.gestion_medica.demo.model.Usuario;
+
 public class HomeController {
 
     @GetMapping("/")
@@ -15,9 +18,9 @@ public class HomeController {
         return "index";
     }
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     public String login() {
-        return "login";
+        return "redirect:/dashboard";
     }
 
     @GetMapping("/dashboard")

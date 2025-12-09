@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Personas</title>
+    <link rel="stylesheet" href="personas.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧑 Gestión de Personas</h1>
+            <button class="btn btn-primary" onclick="openModal()">
+                ➕ Nueva Persona
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar persona..." 
+                   oninput="filterPersonas()">
+            <select id="filterGenero" onchange="filterPersonas()">
+                <option value="">Todos los géneros</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+            </select>
+            <select id="filterTipoDoc" onchange="filterPersonas()">
+                <option value="">Todos los documentos</option>
+                <option value="CC">Cédula Ciudadanía</option>
+                <option value="CE">Cédula Extranjería</option>
+                <option value="TI">Tarjeta Identidad</option>
+                <option value="PA">Pasaporte</option>
+            </select>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalPersonas">0</div>
+                <div class="stat-label">Total Personas</div>
+            </div>
+            <div class="stat-card male">
+                <div class="stat-number" id="totalMasculino">0</div>
+                <div class="stat-label">Masculino</div>
+            </div>
+            <div class="stat-card female">
+                <div class="stat-number" id="totalFemenino">0</div>
+                <div class="stat-label">Femenino</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Documento</th>
+                        <th>Tipo</th>
+                        <th>Nombre Completo</th>
+                        <th>Género</th>
+                        <th>Fecha Nacimiento</th>
+                        <th>Edad</th>
+                        <th>Correo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="personasBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="personaModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Nueva Persona</h2>
+            <form id="personaForm" onsubmit="savePersona(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo Documento *</label>
+                        <select id="tipoDocumento" required>
+                            <option value="">Seleccione</option>
+                            <option value="CC">Cédula de Ciudadanía</option>
+                            <option value="CE">Cédula de Extranjería</option>
+                            <option value="TI">Tarjeta de Identidad</option>
+                            <option value="PA">Pasaporte</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número Documento *</label>
+                        <input type="number" id="numDocumento" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="nombrePersona" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Apellido *</label>
+                        <input type="text" id="apellidoPersona" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Género *</label>
+                        <select id="genero" required>
+                            <option value="">Seleccione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Nacimiento *</label>
+                        <input type="date" id="fechaNacimiento" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Correo Electrónico *</label>
+                    <input type="email" id="correo" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="personas.js"></script>
+</body>
+</html>

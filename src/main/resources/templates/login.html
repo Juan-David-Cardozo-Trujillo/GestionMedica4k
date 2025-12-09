@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - HIS+</title>
+    <link rel="stylesheet" href="login.css" />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="logo">⚕️</div>
+          <h1>HIS+ System</h1>
+          <p>Sistema Hospitalario Inteligente</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="username">
+              <span class="icon">👤</span>
+              Usuario
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Ingrese su usuario"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              <span class="icon">🔒</span>
+              Contraseña
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Ingrese su contraseña"
+              required
+            />
+            <span class="toggle-password" onclick="togglePassword()">👁️</span>
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox" id="rememberMe" />
+              <span>Recordar sesión</span>
+            </label>
+            <a href="#" class="forgot-password">¿Olvidó su contraseña?</a>
+          </div>
+
+          <button type="submit" class="btn-login" id="btnLogin">
+            <span class="btn-text">Iniciar Sesión</span>
+            <span class="btn-loader" style="display: none">⏳</span>
+          </button>
+
+          <div class="register-link">
+            ¿No tiene cuenta? <a href="usuarios.html">Registrarse</a>
+          </div>
+        </form>
+
+        <div class="alert" id="alert" style="display: none"></div>
+      </div>
+
+      <div class="login-footer">
+        <p>&copy; 2024 HIS+ Sistema Hospitalario</p>
+      </div>
+    </div>
+
+    <script src="login.js"></script>
+  </body>
+</html>
