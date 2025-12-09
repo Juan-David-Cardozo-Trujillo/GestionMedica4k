@@ -1,5 +1,5 @@
-// usuarios.js
-const API_URL = 'http://localhost:8080';
+// usuarios.js - VERSIÓN CORREGIDA
+const API_URL = 'http://localhost:8080'; // ✅ Puerto correcto Spring Boot
 let currentUsuario = null;
 let allUsuarios = [];
 
@@ -45,14 +45,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUsuarios();
     
     // Mostrar permisos al seleccionar rol
-    document.getElementById('rol').addEventListener('change', mostrarPermisos);
+    const rolSelect = document.getElementById('rol');
+    if (rolSelect) {
+        rolSelect.addEventListener('change', mostrarPermisos);
+    }
 });
 
-// Cargar usuarios
+// ========== CARGAR USUARIOS ==========
 async function loadUsuarios() {
     try {
         const response = await fetch(`${API_URL}/api/usuarios`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
         });
         
         if (!response.ok) throw new Error('Error al cargar usuarios');
@@ -66,9 +72,11 @@ async function loadUsuarios() {
     }
 }
 
-// Renderizar tabla
+// ========== RENDERIZAR TABLA ==========
 function renderUsuarios(usuarios) {
     const tbody = document.getElementById('usuariosBody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     if (usuarios.length === 0) {
@@ -82,35 +90,46 @@ function renderUsuarios(usuarios) {
     
     usuarios.forEach(user => {
         const rolClass = user.rol.toLowerCase().replace(/\s/g, '');
-        const estado = 'activo'; // Por defecto activo
+        const nombreCompleto = user.persona 
+            ? `${user.persona.nombrePersona || ''} ${user.persona.apellidoPersona || ''}`.trim()
+            : 'N/A';
+        const numDocumento = user.persona?.numDocumento || 'N/A';
         
         tbody.innerHTML += `
             <tr>
-                <td>${user.idusuario}</td>
-                <td>${user.nombreusuario}</td>
-                <td>${user.persona?.nombrepersona || 'N/A'} ${user.persona?.apellidopersona || ''}</td>
-                <td>${user.numdocumento}</td>
+                <td>${user.idUsuario}</td>
+                <td>${user.nombreUsuario}</td>
+                <td>${nombreCompleto}</td>
+                <td>${numDocumento}</td>
                 <td><span class="role-badge role-${rolClass}">${user.rol}</span></td>
-                <td><span class="status-badge status-${estado}">${estado.charAt(0).toUpperCase() + estado.slice(1)}</span></td>
+                <td><span class="status-badge status-activo">Activo</span></td>
                 <td>
-                    <button class="btn-icon" onclick='editUsuario(${JSON.stringify(user)})' title="Editar">✏️</button>
-                    <button class="btn-icon" onclick="deleteUsuario(${user.idusuario})" title="Eliminar">🗑️</button>
+                    <button class="btn-icon" onclick='editUsuario(${JSON.stringify(user).replace(/'/g, "&#39;")})' 
+                            title="Editar">✏️</button>
+                    <button class="btn-icon" onclick="deleteUsuario(${user.idUsuario})" 
+                            title="Eliminar">🗑️</button>
                 </td>
             </tr>
         `;
     });
 }
 
-// Actualizar estadísticas
+// ========== ACTUALIZAR ESTADÍSTICAS ==========
 function updateStats() {
-    document.getElementById('totalUsuarios').textContent = allUsuarios.length;
-    document.getElementById('totalAdmins').textContent = 
-        allUsuarios.filter(u => u.rol === 'Administrador').length;
-    document.getElementById('totalMedicos').textContent = 
-        allUsuarios.filter(u => u.rol === 'Medico').length;
+    const totalElement = document.getElementById('totalUsuarios');
+    const adminsElement = document.getElementById('totalAdmins');
+    const medicosElement = document.getElementById('totalMedicos');
+    
+    if (totalElement) totalElement.textContent = allUsuarios.length;
+    if (adminsElement) {
+        adminsElement.textContent = allUsuarios.filter(u => u.rol === 'Administrador').length;
+    }
+    if (medicosElement) {
+        medicosElement.textContent = allUsuarios.filter(u => u.rol === 'Medico').length;
+    }
 }
 
-// Abrir modal
+// ========== ABRIR MODAL ==========
 function openModal(usuario = null) {
     const modal = document.getElementById('usuarioModal');
     const form = document.getElementById('usuarioForm');
@@ -121,17 +140,17 @@ function openModal(usuario = null) {
         currentUsuario = usuario;
         
         // Llenar datos de persona
-        document.getElementById('tipoDocumento').value = usuario.persona?.tipodocumento || '';
-        document.getElementById('numDocumento').value = usuario.numdocumento;
+        document.getElementById('tipoDocumento').value = usuario.persona?.tipoDocumento || '';
+        document.getElementById('numDocumento').value = usuario.persona?.numDocumento || '';
         document.getElementById('numDocumento').disabled = true;
-        document.getElementById('nombrePersona').value = usuario.persona?.nombrepersona || '';
-        document.getElementById('apellidoPersona').value = usuario.persona?.apellidopersona || '';
+        document.getElementById('nombrePersona').value = usuario.persona?.nombrePersona || '';
+        document.getElementById('apellidoPersona').value = usuario.persona?.apellidoPersona || '';
         document.getElementById('genero').value = usuario.persona?.genero || '';
-        document.getElementById('fechaNacimiento').value = usuario.persona?.fechanacimiento || '';
+        document.getElementById('fechaNacimiento').value = usuario.persona?.fechaNacimiento || '';
         document.getElementById('correo').value = usuario.persona?.correo || '';
         
         // Llenar datos de usuario
-        document.getElementById('nombreUsuario').value = usuario.nombreusuario;
+        document.getElementById('nombreUsuario').value = usuario.nombreUsuario;
         document.getElementById('contrasena').value = '';
         document.getElementById('contrasena').placeholder = 'Dejar en blanco para mantener actual';
         document.getElementById('contrasena').required = false;
@@ -145,23 +164,30 @@ function openModal(usuario = null) {
         document.getElementById('numDocumento').disabled = false;
         document.getElementById('contrasena').required = true;
         document.getElementById('contrasena').placeholder = 'Mínimo 6 caracteres';
-        document.getElementById('permissionsInfo').style.display = 'none';
+        const permissionsInfo = document.getElementById('permissionsInfo');
+        if (permissionsInfo) permissionsInfo.style.display = 'none';
     }
     
     modal.style.display = 'block';
 }
 
-// Cerrar modal
+// ========== CERRAR MODAL ==========
 function closeModal() {
-    document.getElementById('usuarioModal').style.display = 'none';
-    document.getElementById('usuarioForm').reset();
+    const modal = document.getElementById('usuarioModal');
+    const form = document.getElementById('usuarioForm');
+    
+    if (modal) modal.style.display = 'none';
+    if (form) form.reset();
+    
     currentUsuario = null;
 }
 
-// Mostrar permisos según rol
+// ========== MOSTRAR PERMISOS ==========
 function mostrarPermisos() {
     const rol = document.getElementById('rol').value;
     const permissionsInfo = document.getElementById('permissionsInfo');
+    
+    if (!permissionsInfo) return;
     
     if (!rol) {
         permissionsInfo.style.display = 'none';
@@ -179,7 +205,7 @@ function mostrarPermisos() {
     permissionsInfo.style.display = 'block';
 }
 
-// Guardar usuario
+// ========== GUARDAR USUARIO ==========
 async function saveUsuario(event) {
     event.preventDefault();
     
@@ -191,6 +217,7 @@ async function saveUsuario(event) {
         return;
     }
     
+    // ✅ Estructura que coincide EXACTAMENTE con el backend
     const data = {
         persona: {
             numDocumento: parseInt(document.getElementById('numDocumento').value),
@@ -203,8 +230,7 @@ async function saveUsuario(event) {
         },
         usuario: {
             nombreUsuario: document.getElementById('nombreUsuario').value.trim(),
-            rol: document.getElementById('rol').value,
-            numDocumento: parseInt(document.getElementById('numDocumento').value)
+            rol: document.getElementById('rol').value
         }
     };
     
@@ -215,13 +241,13 @@ async function saveUsuario(event) {
     
     try {
         const url = currentUsuario 
-            ? `${API_URL}/api/usuarios/${currentUsuario.idusuario}`
+            ? `${API_URL}/api/usuarios/${currentUsuario.idUsuario}`
             : `${API_URL}/api/usuarios/crear`;
         
         const method = currentUsuario ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
-            method,
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -231,7 +257,7 @@ async function saveUsuario(event) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Error al guardar');
+            throw new Error(error.mensaje || 'Error al guardar');
         }
         
         showNotification(
@@ -247,12 +273,12 @@ async function saveUsuario(event) {
     }
 }
 
-// Editar usuario
+// ========== EDITAR USUARIO ==========
 function editUsuario(usuario) {
     openModal(usuario);
 }
 
-// Eliminar usuario
+// ========== ELIMINAR USUARIO ==========
 async function deleteUsuario(idUsuario) {
     if (!confirm('¿Está seguro de eliminar este usuario?\n\nEsta acción no se puede deshacer.')) {
         return;
@@ -261,7 +287,10 @@ async function deleteUsuario(idUsuario) {
     try {
         const response = await fetch(`${API_URL}/api/usuarios/${idUsuario}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
         });
         
         if (!response.ok) throw new Error('Error al eliminar');
@@ -274,19 +303,24 @@ async function deleteUsuario(idUsuario) {
     }
 }
 
-// Filtrar usuarios
+// ========== FILTRAR USUARIOS ==========
 function filterUsuarios() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const rolFilter = document.getElementById('filterRol').value;
+    const searchInput = document.getElementById('searchInput');
+    const rolFilter = document.getElementById('filterRol');
+    
+    if (!searchInput || !rolFilter) return;
+    
+    const search = searchInput.value.toLowerCase();
+    const rol = rolFilter.value;
     
     const filtered = allUsuarios.filter(user => {
         const matchSearch = 
-            user.nombreusuario.toLowerCase().includes(search) ||
-            (user.persona?.nombrepersona || '').toLowerCase().includes(search) ||
-            (user.persona?.apellidopersona || '').toLowerCase().includes(search) ||
-            user.numdocumento.toString().includes(search);
+            user.nombreUsuario.toLowerCase().includes(search) ||
+            (user.persona?.nombrePersona || '').toLowerCase().includes(search) ||
+            (user.persona?.apellidoPersona || '').toLowerCase().includes(search) ||
+            (user.persona?.numDocumento || '').toString().includes(search);
         
-        const matchRol = !rolFilter || user.rol === rolFilter;
+        const matchRol = !rol || user.rol === rol;
         
         return matchSearch && matchRol;
     });
@@ -294,11 +328,32 @@ function filterUsuarios() {
     renderUsuarios(filtered);
 }
 
-// Notificaciones
-function showNotification(message, type) {
+// ========== NOTIFICACIONES ==========
+function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
-    notification.className = `notification notification-${type} show`;
+    notification.className = `notification notification-${type}`;
     notification.textContent = message;
+    
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
+    
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// ========== CERRAR MODAL AL HACER CLIC FUERA ==========
+window.onclick = function(event) {
+    const modal = document.getElementById('usuarioModal');
+    if (event.target === modal) {
+        closeModal();
+    }
 }
