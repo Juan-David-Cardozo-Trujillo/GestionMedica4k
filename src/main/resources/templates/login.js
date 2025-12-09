@@ -1,13 +1,5 @@
-// login.js - Versión REST API
+// login.js - Versión REST API Corregida
 const API_URL = 'http://localhost:8080';
-
-// Verificar si ya hay sesión activa
-document.addEventListener('DOMContentLoaded', () => {
-    const usuario = localStorage.getItem('usuario');
-    if (usuario) {
-        window.location.href = '/dashboard';
-    }
-});
 
 // Toggle mostrar/ocultar contraseña
 function togglePassword() {
@@ -61,12 +53,19 @@ async function handleLogin(event) {
         
         console.log('Respuesta del servidor:', data);
 
-        if (data.ok) {
+        // --- CORRECCIÓN IMPORTANTE AQUÍ ---
+        // Tu servidor devuelve 'success', no 'ok'
+        if (data.success === true) { 
+            
             // Guardar información del usuario en localStorage
-            //localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            localStorage.setItem('userRole', data.usuario.rol);
-            //localStorage.setItem('userName', data.usuario.nombreUsuario);
-            //localStorage.setItem('userId', data.usuario.idUsuario);
+            localStorage.setItem('usuario', JSON.stringify(data.usuario));
+            
+            // Aseguramos que existan los datos antes de guardarlos
+            if (data.usuario) {
+                localStorage.setItem('userRole', data.usuario.rol || 'Usuario');
+                localStorage.setItem('userName', data.usuario.nombreUsuario || username);
+                localStorage.setItem('userId', data.usuario.idUsuario || '');
+            }
             
             if (rememberMe) {
                 localStorage.setItem('rememberMe', 'true');
@@ -74,8 +73,10 @@ async function handleLogin(event) {
             
             showAlert('¡Inicio de sesión exitoso!', 'success');
             
-            
-            window.location.href = 'dashboard.html';
+            // Redirección explícita al archivo HTML
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000); // Un pequeño retraso para que veas el mensaje de éxito
             
         } else {
             showAlert(data.mensaje || 'Usuario o contraseña incorrectos', 'error');
