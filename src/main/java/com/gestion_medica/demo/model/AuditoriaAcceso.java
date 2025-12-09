@@ -1,13 +1,12 @@
 package com.gestion_medica.demo.model;
 
-import java.time.LocalDate;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -19,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// ... imports y annotations ...
 public class AuditoriaAcceso {
 
     @Id
@@ -26,28 +26,20 @@ public class AuditoriaAcceso {
     @Column(name = "idevento")
     private Integer idEvento;
 
-    @Column(name = "iporigen", nullable = false, length = 50)
-    private String ipOrigen;
-
-    @Column(name = "accion", nullable = false, length = 50)
-    private String accion;
-
-    @Column(name = "numdocumento")
-    private Integer numDocumento;
-
-    @Column(name = "idempleado")
-    private Integer idEmpleado;
-
-    @Column(name = "idusuario")
-    private Integer idUsuario;
-
-    @Column(name = "fechaevento", nullable = false)
-    private LocalDate fechaEvento;
-
-    @Column(name = "tablaafectada", nullable = false, length = 50)
-    private String tablaAfectada;
+    // ... campos simples (ip, accion, fecha, tabla) quedan igual ...
+    // --- CAMBIO: BORRAR ESTOS TRES ---
+    // Borrar: private Integer numDocumento;
+    // Borrar: private Integer idEmpleado;
+    // Borrar: private Integer idUsuario;
+    // --- CORRECCIÓN: Objetos editables ---
+    @ManyToOne
+    @JoinColumns({
+        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento"),
+        @JoinColumn(name = "idempleado", referencedColumnName = "idempleado")
+    })
+    private Empleado empleado;
 
     @ManyToOne
-    @JoinColumn(name = "idusuario", insertable = false, updatable = false)
+    @JoinColumn(name = "idusuario") // Editable
     private Usuario usuario;
 }

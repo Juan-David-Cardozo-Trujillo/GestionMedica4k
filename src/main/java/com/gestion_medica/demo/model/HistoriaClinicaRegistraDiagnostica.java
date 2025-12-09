@@ -1,12 +1,20 @@
 package com.gestion_medica.demo.model;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import com.gestion_medica.demo.model.keys.HistoriaClinicaRegistraDiagnosticaId;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Entity
 @Table(name = "historias_clinicas_registra_diagnostica")
@@ -33,4 +41,16 @@ public class HistoriaClinicaRegistraDiagnostica {
 
     @Column(name = "horaregistro", nullable = false)
     private LocalTime horaRegistro;
+
+    @ManyToOne
+    @JoinColumn(name = "codhistoria", insertable = false, updatable = false)
+    private HistoriaClinica historiaClinica;
+
+    @ManyToOne
+    @JoinColumn(name = "idenfermedad", insertable = false, updatable = false)
+    private Enfermedad enfermedad;
+
+    @ManyToOne
+    @JoinColumn(name = "idcita", insertable = false, updatable = false)
+    private Cita cita;
 }

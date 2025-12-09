@@ -1,7 +1,15 @@
 package com.gestion_medica.demo.model;
 
 import com.gestion_medica.demo.model.keys.EquipamientoUsaDepartamentoId;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,4 +37,11 @@ public class EquipamientoUsaDepartamento {
     @ManyToOne
     @JoinColumn(name = "codequip", insertable = false, updatable = false)
     private Equipamiento equipamiento;
+
+    @ManyToOne
+    @JoinColumns({
+        @JoinColumn(name = "nombredepartamento", referencedColumnName = "nombredepartamento", insertable = false, updatable = false),
+        @JoinColumn(name = "idsede", referencedColumnName = "idsede", insertable = false, updatable = false)
+    })
+    private Departamento departamento;
 }
