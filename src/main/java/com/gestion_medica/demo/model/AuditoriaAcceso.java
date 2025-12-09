@@ -31,14 +31,6 @@ public class AuditoriaAcceso {
     @Column(name = "tablaafectada", nullable = false, length = 50)
     private String tablaAfectada;
 
-    // --- RELACIONES (Opcionales para flexibilidad) ---
-    // Relación con Empleado (Puede ser null si la acción la hace un admin no empleado)
-    @ManyToOne
-    @JoinColumns({
-        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento"),
-        @JoinColumn(name = "idempleado", referencedColumnName = "idempleado")
-    })
-    private Empleado empleado;
 
     // Relación con Usuario (Quien hizo la acción)
     @ManyToOne

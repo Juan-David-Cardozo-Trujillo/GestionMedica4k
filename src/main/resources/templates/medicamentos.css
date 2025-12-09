@@ -398,6 +398,54 @@ tbody tr:hover {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
+/* Elementos asignados */
+.assigned-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.assigned-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.assigned-info strong {
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.assigned-info small {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
 /* Animations */
 @keyframes slideIn {
     from {

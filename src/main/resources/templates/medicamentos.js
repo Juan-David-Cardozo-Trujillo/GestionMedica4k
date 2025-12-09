@@ -129,6 +129,8 @@ function closeModal() {
 // Guardar medicamento
 async function saveMedicamento(event) {
     event.preventDefault();
+
+    const esNuevo = !currentMedicamento; // Determinar si es INSERT o UPDATE
     
     const data = {
         nombreMed: document.getElementById('nombreMed').value.trim(),
@@ -154,6 +156,9 @@ async function saveMedicamento(event) {
         });
         
         if (!response.ok) throw new Error('Error al guardar');
+
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'medicamentos');
         
         showNotification('Medicamento guardado correctamente', 'success');
         closeModal();
@@ -262,6 +267,8 @@ async function updateStock(event) {
         });
         
         if (!response.ok) throw new Error('Error al actualizar');
+
+        await registrarAuditoria('UPDATE', 'medicamentos');
         
         showNotification(`Stock actualizado: ${tipo === 'entrada' ? '+' : '-'}${cantidad} unidades`, 'success');
         closeDetallesModal();
@@ -283,6 +290,8 @@ async function deleteMedicamento(codMed) {
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'medicamentos');
         
         showNotification('Medicamento eliminado', 'success');
         loadMedicamentos();

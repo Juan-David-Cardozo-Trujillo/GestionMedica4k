@@ -209,6 +209,8 @@ function mostrarPermisos() {
 async function saveUsuario(event) {
     event.preventDefault();
     
+    const esNuevo = !currentUsuario; // Determinar si es INSERT o UPDATE
+
     const contrasena = document.getElementById('contrasena').value;
     
     // Validaciones
@@ -259,6 +261,9 @@ async function saveUsuario(event) {
             const error = await response.json();
             throw new Error(error.mensaje || 'Error al guardar');
         }
+
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'usuarios');
         
         showNotification(
             currentUsuario ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente',
@@ -294,6 +299,8 @@ async function deleteUsuario(idUsuario) {
         });
         
         if (!response.ok) throw new Error('Error al eliminar');
+
+        await registrarAuditoria('DELETE', 'usuarios');
         
         showNotification('Usuario eliminado correctamente', 'success');
         loadUsuarios();

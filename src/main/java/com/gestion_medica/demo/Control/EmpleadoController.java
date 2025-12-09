@@ -1,7 +1,9 @@
-package com.gestion_medica.demo.control;
+package com.gestion_medica.demo.Control;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,8 +30,40 @@ public class EmpleadoController {
     private EmpleadoService empleadoService;
 
     @GetMapping
-    public List<Empleado> listar() {
-        return empleadoService.findAll();
+    public List<Map<String, Object>> listar() {
+        List<Empleado> empleados = empleadoService.findAll();
+        List<Map<String, Object>> resultado = new ArrayList<>();
+        
+        for (Empleado emp : empleados) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("idEmpleado", emp.getIdEmpleado());
+            map.put("numDocumento", emp.getNumDocumento());
+            map.put("cargo", emp.getCargo());
+            
+            // Datos de la persona anidados
+            if (emp.getPersona() != null) {
+                Map<String, Object> personaMap = new HashMap<>();
+                personaMap.put("nombrePersona", emp.getPersona().getNombrePersona());
+                personaMap.put("apellidoPersona", emp.getPersona().getApellidoPersona());
+                personaMap.put("tipoDocumento", emp.getPersona().getTipoDocumento());
+                personaMap.put("genero", emp.getPersona().getGenero());
+                personaMap.put("fechaNacimiento", emp.getPersona().getFechaNacimiento());
+                personaMap.put("correo", emp.getPersona().getCorreo());
+                map.put("persona", personaMap);
+            }
+            
+            // Datos del departamento
+            if (emp.getDepartamento() != null) {
+                Map<String, Object> deptoMap = new HashMap<>();
+                deptoMap.put("nombredepartamento", emp.getDepartamento().getNombreDepartamento());
+                deptoMap.put("idsede", emp.getDepartamento().getIdSede());
+                map.put("departamento", deptoMap);
+            }
+            
+            resultado.add(map);
+        }
+        
+        return resultado;
     }
 
     @PostMapping

@@ -15,6 +15,7 @@ import java.time.LocalTime;
 public class Equipamiento {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "codequip")
     private Integer codEquip;
 

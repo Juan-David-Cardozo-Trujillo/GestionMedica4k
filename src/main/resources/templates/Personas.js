@@ -38,8 +38,8 @@ function renderPersonas(personas) {
         // p.fechaNacimiento viene como "2023-01-01"
         const edad = calcularEdad(p.fechaNacimiento);
         
-        // Formateo de fecha simple para evitar problemas de zona horaria
-        const fechaMostrar = p.fechaNacimiento; 
+        // Formateo de fecha: extraer solo la parte de la fecha (YYYY-MM-DD)
+        const fechaMostrar = p.fechaNacimiento ? p.fechaNacimiento.split('T')[0] : 'N/A'; 
 
         tbody.innerHTML += `
             <tr>
@@ -112,6 +112,8 @@ function closeModal() {
 
 async function savePersona(event) {
     event.preventDefault();
+
+    const esNuevo = !currentPersona; // Determinar si es INSERT o UPDATE
     
     const data = {
         // IDs del HTML -> Propiedades Java (camelCase)
@@ -144,6 +146,9 @@ async function savePersona(event) {
             const errorText = await response.text();
             throw new Error(errorText);
         }
+
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'personas');
         
         showNotification('Persona guardada correctamente', 'success');
         closeModal();
@@ -171,6 +176,9 @@ async function deletePersona(numDocumento) {
             const errorMsg = await response.text();
             throw new Error(errorMsg);
         }
+
+        await registrarAuditoria('DELETE', 'personas');
+
         showNotification('Persona eliminada', 'success');
         loadPersonas();
     } catch (error) {

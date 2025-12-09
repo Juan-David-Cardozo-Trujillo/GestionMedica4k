@@ -166,6 +166,8 @@ async function saveHistoria(event) {
         });
         
         if (!response.ok) throw new Error('Error al guardar');
+
+        await registrarAuditoria('INSERT', 'historias-clinicas');
         
         showNotification('Historia clínica creada correctamente', 'success');
         closeModal();
@@ -185,6 +187,9 @@ async function showDetails(codHistoria) {
         
         const historia = await response.json();
         currentHistoria = historia;
+        
+        // Registrar acceso de lectura en auditoría
+        await registrarAuditoria('SELECT', 'historias-clinicas');
         
         document.getElementById('historiaDetalles').innerHTML = `
             <div class="detail-row">
@@ -323,6 +328,8 @@ async function saveDiagnostico(event) {
         });
         
         if (!response.ok) throw new Error('Error al guardar');
+
+        await registrarAuditoria('INSERT', 'historias_clinicas_registra_diagnostica');
         
         showNotification('Diagnóstico registrado correctamente', 'success');
         closeDiagnosticoModal();
@@ -344,6 +351,8 @@ async function deleteHistoria(codHistoria) {
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'historias-clinicas');
         
         showNotification('Historia eliminada', 'success');
         loadHistorias();

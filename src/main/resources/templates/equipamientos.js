@@ -1,15 +1,17 @@
 // equipamientos.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 let currentEquipamiento = null;
 let allEquipamientos = [];
 let sedes = [];
 let departamentos = [];
+let empleados = [];
 let userRole = localStorage.getItem('userRole') || 'TecnicoMantenimiento';
 
 document.addEventListener('DOMContentLoaded', () => {
     checkPermissions();
     loadEquipamientos();
     loadSedes();
+    loadEmpleados();
     setFechaActual();
 });
 
@@ -84,7 +86,10 @@ function populateSedesSelect() {
 // Cargar departamentos por sede
 async function loadDepartamentosSede() {
     const idSede = document.getElementById('idSedeAsignar').value;
-    if (!idSede) return;
+    if (!idSede) {
+        document.getElementById('nombreDepartamentoAsignar').innerHTML = '<option value="">Seleccione sede primero</option>';
+        return;
+    }
     
     try {
         const response = await fetch(`${API_URL}/departamentos?idSede=${idSede}`, {
@@ -93,7 +98,17 @@ async function loadDepartamentosSede() {
         departamentos = await response.json();
         
         const select = document.getElementById('nombreDepartamentoAsignar');
+        
+        // Validar si hay departamentos
+        if (!departamentos || departamentos.length === 0) {
+            select.innerHTML = '<option value="">❌ No hay departamentos en esta sede</option>';
+            select.disabled = true;
+            return;
+        }
+        
         select.innerHTML = '<option value="">Seleccione departamento</option>';
+        select.disabled = false;
+        
         departamentos.forEach(d => {
             select.innerHTML += `
                 <option value="${d.nombredepartamento}">
@@ -103,6 +118,7 @@ async function loadDepartamentosSede() {
         });
     } catch (error) {
         console.error('Error:', error);
+        document.getElementById('nombreDepartamentoAsignar').innerHTML = '<option value="">Error al cargar departamentos</option>';
     }
 }
 
@@ -130,9 +146,17 @@ function renderEquipamientos(equipamientos) {
         
         let diasClass = '';
         let diasText = diasRestantes;
-        if (diasRestantes < 0) {
+        
+        // Mostrar N/A si está fuera de servicio, EN MANTENIMIENTO si está en mantenimiento, PENDIENTE si está vencido
+        if (equip.estado === 'Fuera de Servicio') {
+            diasClass = 'text-muted';
+            diasText = 'N/A';
+        } else if (equip.estado === 'En Mantenimiento') {
+            diasClass = 'text-warning';
+            diasText = 'EN MANTENIMIENTO';
+        } else if (diasRestantes < 0) {
             diasClass = 'text-danger';
-            diasText = `Vencido (${Math.abs(diasRestantes)} días)`;
+            diasText = `PENDIENTE (${Math.abs(diasRestantes)} días)`;
         } else if (diasRestantes < 30) {
             diasClass = 'text-warning';
             diasText = `${diasRestantes} días`;
@@ -207,6 +231,8 @@ function closeModal() {
 // Guardar equipamiento
 async function saveEquipamiento(event) {
     event.preventDefault();
+
+    const esNuevo = !currentEquipamiento; // Determinar si es INSERT o UPDATE
     
     const data = {
         nombreEquip: document.getElementById('nombreEquip').value.trim(),
@@ -216,7 +242,7 @@ async function saveEquipamiento(event) {
     
     try {
         const url = currentEquipamiento 
-            ? `${API_URL}/equipamientos/${currentEquipamiento.codequip}`
+            ? `${API_URL}/equipamientos/${currentEquipamiento.codequip || currentEquipamiento.codEquip}`
             : `${API_URL}/equipamientos`;
         const method = currentEquipamiento ? 'PUT' : 'POST';
         
@@ -231,6 +257,9 @@ async function saveEquipamiento(event) {
         
         if (!response.ok) throw new Error('Error al guardar');
         
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'equipamientos');
+
         showNotification('Equipamiento guardado correctamente', 'success');
         closeModal();
         loadEquipamientos();
@@ -254,6 +283,9 @@ async function showDetails(codEquip) {
         
         const equip = await response.json();
         currentEquipamiento = equip;
+        
+        // Registrar acceso de lectura en auditoría
+        await registrarAuditoria('SELECT', 'equipamientos');
         
         const fechaMant = new Date(equip.fechamantenimiento);
         const proximaMant = new Date(fechaMant);
@@ -286,6 +318,9 @@ async function showDetails(codEquip) {
         
         // Cargar departamentos asignados
         await loadDepartamentosAsignados(codEquip);
+        
+        // Cargar empleados asignados
+        await loadEmpleadosAsignados(codEquip);
         
         document.getElementById('detallesModal').style.display = 'block';
     } catch (error) {
@@ -339,7 +374,7 @@ async function registrarMantenimiento(event) {
     };
     
     try {
-        const response = await fetch(`${API_URL}/equipamientos/${currentEquipamiento.codequip}`, {
+        const response = await fetch(`${API_URL}/equipamientos/${currentEquipamiento.codequip || currentEquipamiento.codEquip}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -349,6 +384,8 @@ async function registrarMantenimiento(event) {
         });
         
         if (!response.ok) throw new Error('Error al actualizar');
+
+        await registrarAuditoria('UPDATE', 'equipamientos');
         
         showNotification('Mantenimiento registrado correctamente', 'success');
         closeDetallesModal();
@@ -374,10 +411,24 @@ function closeAsignarModal() {
 async function asignarDepartamento(event) {
     event.preventDefault();
     
+    const nombreDepartamento = document.getElementById('nombreDepartamentoAsignar').value.trim();
+    const idSede = document.getElementById('idSedeAsignar').value.trim();
+    
+    // Validaciones
+    if (!nombreDepartamento) {
+        showNotification('Por favor seleccione un departamento', 'warning');
+        return;
+    }
+    
+    if (!idSede) {
+        showNotification('Por favor seleccione una sede', 'warning');
+        return;
+    }
+    
     const data = {
-        codEquip: currentEquipamiento.codequip,
-        nombreDepartamento: document.getElementById('nombreDepartamentoAsignar').value,
-        idSede: parseInt(document.getElementById('idSedeAsignar').value)
+        codEquip: currentEquipamiento.codequip || currentEquipamiento.codEquip,
+        nombreDepartamento: nombreDepartamento,
+        idSede: parseInt(idSede)
     };
     
     try {
@@ -390,14 +441,19 @@ async function asignarDepartamento(event) {
             body: JSON.stringify(data)
         });
         
-        if (!response.ok) throw new Error('Error al asignar');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al asignar equipamiento');
+        }
+        
+        await registrarAuditoria('INSERT', 'equipamientos_usa_departamentos');
         
         showNotification('Equipamiento asignado correctamente', 'success');
         closeAsignarModal();
-        await loadDepartamentosAsignados(currentEquipamiento.codequip);
+        await loadDepartamentosAsignados(currentEquipamiento.codequip || currentEquipamiento.codEquip);
     } catch (error) {
         console.error('Error:', error);
-        showNotification('Error al asignar equipamiento', 'error');
+        showNotification(error.message || 'Error al asignar equipamiento', 'error');
     }
 }
 
@@ -412,6 +468,8 @@ async function deleteEquipamiento(codEquip) {
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'equipamientos');
         
         showNotification('Equipamiento eliminado', 'success');
         loadEquipamientos();
@@ -462,3 +520,154 @@ style.textContent = `
     .text-success { color: #28a745; font-weight: 600; }
 `;
 document.head.appendChild(style);
+
+// ===== FUNCIONES PARA EMPLEADOS =====
+
+// Cargar empleados
+async function loadEmpleados() {
+    try {
+        const response = await fetch(`${API_URL}/empleados`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar');
+        empleados = await response.json();
+    } catch (error) {
+        console.error('Error al cargar empleados:', error);
+    }
+}
+
+// Cargar empleados asignados al equipamiento
+async function loadEmpleadosAsignados(codEquip) {
+    try {
+        const response = await fetch(`${API_URL}/equipamientos/${codEquip}/mantenimiento/empleados`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar empleados');
+        
+        const empleadosAsignados = await response.json();
+        const container = document.getElementById('empleadosList');
+        
+        if (empleadosAsignados.length === 0) {
+            container.innerHTML = '<p style="color: #666;">No hay empleados asignados</p>';
+            return;
+        }
+        
+        container.innerHTML = empleadosAsignados.map(emp => `
+            <div class="assigned-item">
+                <div class="assigned-info">
+                    <strong>${emp.persona ? emp.persona.nombrePersona + ' ' + emp.persona.apellidoPersona : 'Sin nombre'}</strong>
+                    <small>Cédula: ${emp.numDocumento}</small>
+                </div>
+                <button class="btn btn-danger btn-sm" 
+                        onclick="deleteEmpleadoMantenimiento(${currentEquipamiento.codequip}, ${emp.numDocumento}, ${emp.idEmpleado})">
+                    ✕ Remover
+                </button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al cargar empleados asignados', 'error');
+    }
+}
+
+// Abrir modal asignar empleado
+function openAsignarEmpleadoModal() {
+    const modal = document.getElementById('asignarEmpleadoModal');
+    const select = document.getElementById('empleadoSelect');
+    
+    // Limpiar select
+    select.innerHTML = '<option value="">Seleccione empleado</option>';
+    
+    // Poblar select con empleados disponibles
+    empleados.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify({
+            numDocumento: emp.numDocumento,
+            idEmpleado: emp.idEmpleado
+        });
+        const nombre = emp.persona ? `${emp.persona.nombrePersona} ${emp.persona.apellidoPersona}` : 'Sin nombre';
+        option.textContent = nombre;
+        select.appendChild(option);
+    });
+    
+    modal.style.display = 'block';
+}
+
+// Cerrar modal asignar empleado
+function closeAsignarEmpleadoModal() {
+    document.getElementById('asignarEmpleadoModal').style.display = 'none';
+}
+
+// Asignar empleado al mantenimiento
+async function asignarEmpleadoMantenimiento(event) {
+    event.preventDefault();
+    
+    const selectValue = document.getElementById('empleadoSelect').value;
+    if (!selectValue) {
+        showNotification('Seleccione un empleado', 'error');
+        return;
+    }
+    
+    const empleado = JSON.parse(selectValue);
+    
+    try {
+        const response = await fetch(`${API_URL}/equipamientos/mantenimiento/asignar-empleado`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                codEquip: currentEquipamiento.codequip,
+                numDocumento: empleado.numDocumento,
+                idEmpleado: empleado.idEmpleado
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showNotification(data.error || 'Error al asignar empleado', 'error');
+            return;
+        }
+        
+        showNotification('Empleado asignado correctamente', 'success');
+        closeAsignarEmpleadoModal();
+        loadEmpleadosAsignados(currentEquipamiento.codequip);
+        await registrarAuditoria('INSERT', 'empleados_mantienen_equipamientos');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al asignar empleado', 'error');
+    }
+}
+
+// Eliminar empleado del mantenimiento
+async function deleteEmpleadoMantenimiento(codEquip, numDocumento, idEmpleado) {
+    if (!confirm('¿Remover este empleado?')) return;
+    
+    try {
+        const response = await fetch(
+            `${API_URL}/equipamientos/${codEquip}/mantenimiento/empleado/${numDocumento}/${idEmpleado}`,
+            {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            }
+        );
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showNotification(data.error || 'Error al remover empleado', 'error');
+            return;
+        }
+        
+        showNotification('Empleado removido correctamente', 'success');
+        loadEmpleadosAsignados(codEquip);
+        await registrarAuditoria('DELETE', 'empleados_mantienen_equipamientos');
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al remover empleado', 'error');
+    }
+}

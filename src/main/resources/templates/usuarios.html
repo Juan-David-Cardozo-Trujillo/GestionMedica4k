@@ -10,9 +10,14 @@
     <div class="container">
         <header>
             <h1>👥 Gestión de Usuarios</h1>
-            <button class="btn btn-primary" onclick="openModal()">
-                ➕ Nuevo Usuario
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="openModal()">
+                    ➕ Nuevo Usuario
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                    ← Volver
+                </button>
+            </div>
         </header>
 
         <div class="filters">
@@ -156,6 +161,7 @@
         </div>
     </div>
 
+    <script src="auditoria-helper.js"></script>
     <script src="usuarios.js"></script>
 </body>
 </html>

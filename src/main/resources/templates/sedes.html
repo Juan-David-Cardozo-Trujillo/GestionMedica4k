@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Sedes Hospitalarias</title>
+    <link rel="stylesheet" href="personas.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Gestión de Sedes Hospitalarias</h1>
+            <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                ← Volver
+            </button>
+        </header>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar sede..." 
+                   oninput="filterSedes()">
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalSedes">0</div>
+                <div class="stat-label">Total Sedes</div>
+            </div>
+        </div>
+
+        <!-- Vista de Tarjetas -->
+        <div class="sedes-grid" id="sedesGrid">
+            <!-- Tarjetas generadas dinámicamente -->
+        </div>
+
+        <!-- Vista de Tabla (alternativa) -->
+        <div class="table-container" style="display: none;" id="sedesTable">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre de la Sede</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="sedesBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Editar Sede -->
+    <div id="sedeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>✏️ Editar Sede Hospitalaria</h2>
+            <form id="sedeForm" onsubmit="updateSede(event)">
+                <input type="hidden" id="idSede">
+                
+                <div class="form-group">
+                    <label>Nombre de la Sede *</label>
+                    <input type="text" id="nombreSede" required 
+                           placeholder="Ej: Hospital Central Norte"
+                           maxlength="50">
+                    <small class="form-hint">
+                        Nombre descriptivo de la sede hospitalaria (máximo 50 caracteres)
+                    </small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Helper de auditoría global -->
+    <script src="auditoria-helper.js"></script>
+    <script src="sedes.js"></script>
+</body>
+</html>

@@ -65,6 +65,8 @@ function closeModal() {
 
 async function saveDisease(event) {
     event.preventDefault();
+
+    const esNuevo = !currentDisease; // Determinar si es INSERT o UPDATE
     
     const data = {
         // Estos nombres deben coincidir con los atributos en Enfermedad.java
@@ -91,6 +93,9 @@ async function saveDisease(event) {
         
         if (!response.ok) throw new Error('Error');
         
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'enfermedades');
+
         showNotification('Enfermedad guardada', 'success');
         closeModal();
         loadDiseases();
@@ -114,6 +119,9 @@ async function deleteDisease(id) {
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'enfermedades');
+
         showNotification('Enfermedad eliminada', 'success');
         loadDiseases();
     } catch (error) {

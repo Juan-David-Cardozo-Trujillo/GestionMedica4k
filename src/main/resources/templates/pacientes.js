@@ -124,6 +124,9 @@ function closeModal() {
 async function savePatient(event) {
     event.preventDefault();
     
+    const esNuevo = !currentPatient; // Determinar si es INSERT o UPDATE
+
+
     // ✅ Estructura que coincide con el backend
     const patientData = {
         persona: {
@@ -161,6 +164,10 @@ async function savePatient(event) {
             throw new Error(error.mensaje || 'Error al guardar');
         }
         
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'pacientes');
+
+
         showNotification(
             currentPatient ? 'Paciente actualizado correctamente' : 'Paciente creado correctamente',
             'success'
@@ -196,6 +203,9 @@ async function deletePatient(codPaciente, numDocumento) {
         if (!response.ok) {
             throw new Error('Error al eliminar');
         }
+
+        await registrarAuditoria('DELETE', 'pacientes');
+
         
         showNotification('Paciente eliminado correctamente', 'success');
         loadPatients();

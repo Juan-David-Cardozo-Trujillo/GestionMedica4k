@@ -33,6 +33,7 @@ async function loadSedes() {
         });
         sedes = await response.json();
         populateSedeSelect();
+        populateFilterSedeSelect();
     } catch (error) {
         console.error('Error:', error);
     }
@@ -45,7 +46,7 @@ async function loadDepartamentos(idSede) {
         });
         const allDepts = await response.json();
         // Filtramos en el cliente ya que el endpoint trae todos (o ajusta tu endpoint si filtra por sede)
-        departamentos = allDepts.filter(d => d.idSede == idSede);
+        departamentos = allDepts.filter(d => d.idsede == idSede);
         populateDepartamentoSelect();
     } catch (error) {
         console.error('Error:', error);
@@ -59,7 +60,7 @@ function populateSedeSelect() {
     select.innerHTML = '<option value="">Seleccione</option>';
     sedes.forEach(sede => {
         // Asegúrate que tu backend de Sede devuelva idSede y nombreSede
-        select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
+        select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
     });
     
     select.onchange = function() {
@@ -75,7 +76,15 @@ function populateDepartamentoSelect() {
     const select = document.getElementById('nombreDepartamento');
     select.innerHTML = '<option value="">Seleccione</option>';
     departamentos.forEach(dept => {
-        select.innerHTML += `<option value="${dept.nombreDepartamento}">${dept.nombreDepartamento}</option>`;
+        select.innerHTML += `<option value="${dept.nombredepartamento}">${dept.nombredepartamento}</option>`;
+    });
+}
+
+function populateFilterSedeSelect() {
+    const select = document.getElementById('filterSede');
+    select.innerHTML = '<option value="">Todas las sedes</option>';
+    sedes.forEach(sede => {
+        select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
     });
 }
 
@@ -92,12 +101,12 @@ function renderEmployees(employees) {
         const numDoc = emp.numDocumento; // Propiedad directa del empleado (D mayúscula)
 
         // Departamento
-        const deptoNombre = emp.departamento ? emp.departamento.nombreDepartamento : '---';
-        const sedeId = emp.departamento ? emp.departamento.idSede : '---';
+        const deptoNombre = emp.departamento ? emp.departamento.nombredepartamento : '---';
+        const sedeId = emp.departamento ? emp.departamento.idsede : '---';
 
         // Buscamos el nombre de la sede usando el ID para mostrarlo bonito (opcional)
-        const sedeNombreObj = sedes.find(s => s.idSede === sedeId);
-        const sedeNombre = sedeNombreObj ? sedeNombreObj.nombreSede : sedeId;
+        const sedeNombreObj = sedes.find(s => s.idsede === sedeId);
+        const sedeNombre = sedeNombreObj ? sedeNombreObj.nombresede : sedeId;
 
         tbody.innerHTML += `
             <tr>
@@ -142,7 +151,7 @@ function openModal(employee = null) {
         
         // Lógica para cargar Sede y Departamento en cascada
         if (employee.departamento) {
-            const idSede = employee.departamento.idSede;
+            const idSede = employee.departamento.idsede;
             document.getElementById('idSede').value = idSede;
             
             // Cargar departamentos de esa sede y luego seleccionar el correcto
@@ -174,6 +183,8 @@ function editEmployee(idEmpleado, numDocumento) {
 
 async function saveEmployee(event) {
     event.preventDefault();
+
+    const esNuevo = !currentEmployee; // Determinar si es INSERT o UPDATE
     
     // Recogemos los datos del formulario
     const data = {
@@ -222,6 +233,9 @@ async function saveEmployee(event) {
             const errorText = await response.text();
             throw new Error(errorText);
         }
+
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'empleados');
         
         showNotification(currentEmployee ? 'Empleado actualizado' : 'Empleado creado', 'success');
         closeModal();
@@ -248,6 +262,8 @@ async function deleteEmployee(idEmpleado, numDocumento) {
              const errorText = await response.text();
              throw new Error(errorText);
         }
+
+        await registrarAuditoria('DELETE', 'empleados');
 
         showNotification('Empleado eliminado', 'success');
         loadEmployees();
@@ -285,6 +301,28 @@ function filterEmployees() {
     });
     
     renderEmployees(filtered);
+}
+
+async function registrarAuditoria(accion, tabla) {
+    try {
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        
+        await fetch(`${API_URL}/auditoria/registrar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                accion: accion,
+                tabla: tabla,
+                ipOrigen: 'Web-Client',
+                idUsuario: usuario.idUsuario || null
+            })
+        });
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
+    }
 }
 
 function showNotification(message, type) {

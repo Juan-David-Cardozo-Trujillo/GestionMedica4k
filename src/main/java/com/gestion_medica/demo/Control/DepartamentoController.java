@@ -1,6 +1,9 @@
-package com.gestion_medica.demo.control;
+package com.gestion_medica.demo.Control;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gestion_medica.demo.model.Departamento;
@@ -24,19 +28,54 @@ public class DepartamentoController {
     private DepartamentoService departamentoService;
 
     @GetMapping
-    public List<Departamento> listar() {
-        return departamentoService.findAll();
+    public List<Map<String, Object>> listar(@RequestParam(required = false) Integer idSede) {
+        List<Departamento> departamentos;
+        
+        // Si se proporciona idSede, filtrar por esa sede
+        if (idSede != null) {
+            departamentos = departamentoService.findAll().stream()
+                    .filter(d -> d.getIdSede().equals(idSede))
+                    .toList();
+        } else {
+            departamentos = departamentoService.findAll();
+        }
+        
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (Departamento dept : departamentos) {
+            Map<String, Object> deptData = new HashMap<>();
+            deptData.put("nombredepartamento", dept.getNombreDepartamento());
+            deptData.put("idsede", dept.getIdSede());
+            response.add(deptData);
+        }
+        
+        return response;
     }
 
     @PostMapping
-    public ResponseEntity<?> guardar(@RequestBody Departamento departamento) {
+    public ResponseEntity<Map<String, Object>> guardar(@RequestBody Departamento departamento) {
         try {
+            // Validar que los campos obligatorios no sean nulos
+            if (departamento.getNombreDepartamento() == null || departamento.getNombreDepartamento().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El nombre del departamento es obligatorio"));
+            }
+            if (departamento.getIdSede() == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El ID de la sede es obligatorio"));
+            }
+            
             // Como la entidad tiene los campos planos nombreDepartamento e idSede,
             // Spring Boot mapea el JSON automáticamente. No necesitamos DTOs complejos aquí.
             Departamento nuevo = departamentoService.save(departamento);
-            return ResponseEntity.ok(nuevo);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("nombredepartamento", nuevo.getNombreDepartamento());
+            response.put("idsede", nuevo.getIdSede());
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al guardar: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Error al guardar: " + e.getMessage()));
         }
     }
 

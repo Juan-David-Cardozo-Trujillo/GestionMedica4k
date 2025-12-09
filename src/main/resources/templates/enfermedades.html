@@ -9,9 +9,14 @@
     <div class="container">
       <header>
         <h1>🦠 Catálogo de Enfermedades</h1>
-        <button class="btn btn-primary" onclick="openModal()">
-          ➕ Nueva Enfermedad
-        </button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="openModal()">
+            ➕ Nueva Enfermedad
+          </button>
+          <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+            ← Volver
+          </button>
+        </div>
       </header>
 
       <div class="filters">
@@ -65,6 +70,7 @@
       </div>
     </div>
 
+    <script src="auditoria-helper.js"></script>
     <script src="enfermedades.js"></script>
   </body>
 </html>

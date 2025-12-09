@@ -10,9 +10,14 @@
     <div class="container">
       <header>
         <h1>👨‍💼 Gestión de Empleados</h1>
-        <button class="btn btn-primary" onclick="openModal()">
-          ➕ Nuevo Empleado
-        </button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="openModal()">
+            ➕ Nuevo Empleado
+          </button>
+          <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+            ← Volver
+          </button>
+        </div>
       </header>
 
       <div class="filters">
@@ -139,6 +144,7 @@
       </div>
     </div>
 
+    <script src="auditoria-helper.js"></script>
     <script src="empleados.js"></script>
   </body>
 </html>

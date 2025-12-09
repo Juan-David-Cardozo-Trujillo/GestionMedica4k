@@ -364,6 +364,8 @@ function editFromDetails() {
 // Guardar cita
 async function saveAppointment(event) {
     event.preventDefault();
+
+    const esNuevo = !currentAppointment; // Determinar si es INSERT o UPDATE
     
     const patientSelect = document.getElementById('codPaciente');
     const doctorSelect = document.getElementById('medico');
@@ -395,6 +397,9 @@ async function saveAppointment(event) {
         });
         
         if (!response.ok) throw new Error('Error al guardar');
+
+        const accion = esNuevo ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'citas');
         
         showNotification('Cita guardada correctamente', 'success');
         closeModal();
@@ -429,6 +434,9 @@ async function deleteAppointment(idCita) {
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'citas');
+
         showNotification('Cita eliminada', 'success');
         loadAppointments();
     } catch (error) {
@@ -449,6 +457,9 @@ async function cancelAppointment() {
             },
             body: JSON.stringify({ ...currentAppointment, estado: 'Cancelada' })
         });
+        
+
+        await registrarAuditoria('UPDATE', 'citas');
         
         showNotification('Cita cancelada', 'success');
         closeDetailsModal();

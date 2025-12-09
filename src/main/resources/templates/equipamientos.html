@@ -10,9 +10,14 @@
     <div class="container">
         <header>
             <h1>⚙️ Gestión de Equipamiento Médico</h1>
-            <button class="btn btn-primary" onclick="openModal()" id="btnNuevo">
-                ➕ Nuevo Equipamiento
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="openModal()" id="btnNuevo">
+                    ➕ Nuevo Equipamiento
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                    ← Volver
+                </button>
+            </div>
         </header>
 
         <div class="filters">
@@ -152,6 +157,15 @@
                 </button>
             </div>
 
+            <div class="stock-section">
+                <h3>👨‍🔧 Empleados Responsables del Mantenimiento</h3>
+                <div id="empleadosList"></div>
+                
+                <button class="btn btn-primary" onclick="openAsignarEmpleadoModal()" id="btnAsignarEmpleado">
+                    ➕ Asignar Empleado
+                </button>
+            </div>
+
             <div class="form-actions">
                 <button class="btn btn-secondary" onclick="closeDetallesModal()">Cerrar</button>
             </div>
@@ -185,6 +199,28 @@
         </div>
     </div>
 
+    <!-- Modal Asignar Empleado -->
+    <div id="asignarEmpleadoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAsignarEmpleadoModal()">&times;</span>
+            <h2>👨‍🔧 Asignar Empleado al Mantenimiento</h2>
+            <form id="asignarEmpleadoForm" onsubmit="asignarEmpleadoMantenimiento(event)">
+                <div class="form-group">
+                    <label>Empleado *</label>
+                    <select id="empleadoSelect" required>
+                        <option value="">Seleccione empleado</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" 
+                            onclick="closeAsignarEmpleadoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Asignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auditoria-helper.js"></script>
     <script src="equipamientos.js"></script>
 </body>
 </html>

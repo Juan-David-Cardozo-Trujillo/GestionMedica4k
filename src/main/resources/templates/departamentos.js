@@ -1,9 +1,11 @@
 // CORRECCIÓN 1: Puerto 8080
 const API_URL = 'http://localhost:8080/api';
+let allSedes = [];
+let currentDepartment = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadDepartments();
     loadSedes();
+    loadDepartments();
 });
 
 async function loadDepartments() {
@@ -25,17 +27,22 @@ async function loadSedes() {
         const response = await fetch(`${API_URL}/sedes`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        const sedes = await response.json();
+        allSedes = await response.json();
         const select = document.getElementById('idSede');
         select.innerHTML = '<option value="">Seleccione</option>';
         
-        // CORRECCIÓN: Asegúrate que tu backend de Sedes devuelva 'idSede' y 'nombreSede' (camelCase)
-        sedes.forEach(s => {
-            select.innerHTML += `<option value="${s.idSede}">${s.nombreSede}</option>`;
+        // Backend devuelve propiedades en minúsculas: idsede y nombresede
+        allSedes.forEach(s => {
+            select.innerHTML += `<option value="${s.idsede}">${s.nombresede}</option>`;
         });
     } catch (error) {
         console.error('Error cargando sedes:', error);
     }
+}
+
+function getNombreSede(idSede) {
+    const sede = allSedes.find(s => s.idsede === idSede);
+    return sede ? sede.nombresede : 'N/A';
 }
 
 function renderDepartments(departments) {
@@ -43,16 +50,15 @@ function renderDepartments(departments) {
     tbody.innerHTML = '';
     
     departments.forEach(dept => {
-        // CORRECCIÓN 2: Acceso seguro a objeto anidado
-        // Java devuelve: { nombreDepartamento: "Urgencias", sede: { nombreSede: "Norte" } }
-        const nombreSede = dept.sede ? dept.sede.nombreSede : 'N/A';
+        // Backend devuelve: { nombredepartamento: "Urgencias", idsede: 1 }
+        const nombreSede = getNombreSede(dept.idsede);
         
         tbody.innerHTML += `
             <tr>
-                <td>${dept.nombreDepartamento}</td>
+                <td>${dept.nombredepartamento}</td>
                 <td>${nombreSede}</td>
                 <td>
-                    <button class="btn-icon" onclick="deleteDepartment('${dept.nombreDepartamento}', ${dept.idSede})">🗑️</button>
+                    <button class="btn-icon" onclick="deleteDepartment('${dept.nombredepartamento}', ${dept.idsede})">🗑️</button>
                 </td>
             </tr>
         `;
@@ -71,10 +77,24 @@ function closeModal() {
 
 async function saveDepartment(event) {
     event.preventDefault();
+
+    const nombreDepartamento = document.getElementById('nombreDepartamento').value.trim();
+    const idSedeValue = document.getElementById('idSede').value.trim();
+    
+    // Validar que los campos no estén vacíos
+    if (!nombreDepartamento) {
+        showNotification('El nombre del departamento es obligatorio', 'warning');
+        return;
+    }
+    
+    if (!idSedeValue) {
+        showNotification('Debe seleccionar una sede', 'warning');
+        return;
+    }
     
     const data = {
-        nombreDepartamento: document.getElementById('nombreDepartamento').value,
-        idSede: parseInt(document.getElementById('idSede').value)
+        nombreDepartamento: nombreDepartamento,
+        idSede: parseInt(idSedeValue)
     };
     
     try {
@@ -82,7 +102,7 @@ async function saveDepartment(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 'Authorization': ... (Descomentar si usas token)
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify(data)
         });
@@ -91,12 +111,15 @@ async function saveDepartment(event) {
              const errorText = await response.text();
              throw new Error(errorText);
         }
+
+        const accion = !currentDepartment ? 'INSERT' : 'UPDATE';
+        await registrarAuditoria(accion, 'departamentos');
         
-        showNotification('Departamento creado', 'success');
+        showNotification('Departamento guardado correctamente', 'success');
         closeModal();
         loadDepartments();
     } catch (error) {
-        console.error(error);
+        console.error('Error:', error);
         showNotification('Error al guardar: ' + error.message, 'error');
     }
 }
@@ -108,10 +131,15 @@ async function deleteDepartment(nombre, idSede) {
         // Esta URL coincide con el @DeleteMapping("/{nombre}/{idSede}") del Controller
         const response = await fetch(`${API_URL}/departamentos/${nombre}/${idSede}`, {
             method: 'DELETE',
-            // headers ...
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
         });
         
         if (!response.ok) throw new Error('Error');
+
+        await registrarAuditoria('DELETE', 'departamentos');
+
         showNotification('Departamento eliminado', 'success');
         loadDepartments();
     } catch (error) {

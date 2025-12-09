@@ -1,4 +1,4 @@
-package com.gestion_medica.demo.control;
+package com.gestion_medica.demo.Control;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.gestion_medica.demo.control;
+package com.gestion_medica.demo.Control;
 
 import com.gestion_medica.demo.model.Paciente;
 import com.gestion_medica.demo.model.Persona;
