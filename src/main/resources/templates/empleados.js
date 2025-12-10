@@ -39,14 +39,17 @@ async function loadSedes() {
     }
 }
 
+// CORREGIDO
 async function loadDepartamentos(idSede) {
     try {
         const response = await fetch(`${API_URL}/departamentos`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const allDepts = await response.json();
-        // Filtramos en el cliente ya que el endpoint trae todos (o ajusta tu endpoint si filtra por sede)
-        departamentos = allDepts.filter(d => d.idsede == idSede);
+        
+       
+        departamentos = allDepts.filter(d => d.idSede == idSede);
+        
         populateDepartamentoSelect();
     } catch (error) {
         console.error('Error:', error);
@@ -55,12 +58,14 @@ async function loadDepartamentos(idSede) {
 
 // --- RENDERIZADO Y SELECTS ---
 
+// CORREGIDO
 function populateSedeSelect() {
     const select = document.getElementById('idSede');
     select.innerHTML = '<option value="">Seleccione</option>';
+    
     sedes.forEach(sede => {
-        // Asegúrate que tu backend de Sede devuelva idSede y nombreSede
-        select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
+        
+        select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
     });
     
     select.onchange = function() {
@@ -72,19 +77,23 @@ function populateSedeSelect() {
     };
 }
 
+// CORREGIDO
 function populateDepartamentoSelect() {
     const select = document.getElementById('nombreDepartamento');
     select.innerHTML = '<option value="">Seleccione</option>';
     departamentos.forEach(dept => {
-        select.innerHTML += `<option value="${dept.nombredepartamento}">${dept.nombredepartamento}</option>`;
+        
+        select.innerHTML += `<option value="${dept.nombreDepartamento}">${dept.nombreDepartamento}</option>`;
     });
 }
 
+// CORREGIDO
 function populateFilterSedeSelect() {
     const select = document.getElementById('filterSede');
     select.innerHTML = '<option value="">Todas las sedes</option>';
     sedes.forEach(sede => {
-        select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
+       
+        select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
     });
 }
 

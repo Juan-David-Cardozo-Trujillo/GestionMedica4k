@@ -27,10 +27,14 @@ public class DepartamentoController {
     @Autowired
     private DepartamentoService departamentoService;
 
+    /**
+     * GET - Listar departamentos (con filtro opcional por sede) CORREGIDO:
+     * Devuelve camelCase consistente
+     */
     @GetMapping
     public List<Map<String, Object>> listar(@RequestParam(required = false) Integer idSede) {
         List<Departamento> departamentos;
-        
+
         // Si se proporciona idSede, filtrar por esa sede
         if (idSede != null) {
             departamentos = departamentoService.findAll().stream()
@@ -39,15 +43,22 @@ public class DepartamentoController {
         } else {
             departamentos = departamentoService.findAll();
         }
-        
+
         List<Map<String, Object>> response = new ArrayList<>();
         for (Departamento dept : departamentos) {
             Map<String, Object> deptData = new HashMap<>();
-            deptData.put("nombredepartamento", dept.getNombreDepartamento());
-            deptData.put("idsede", dept.getIdSede());
+            // ✅ CORRECCIÓN: Usar camelCase consistente
+            deptData.put("nombreDepartamento", dept.getNombreDepartamento());
+            deptData.put("idSede", dept.getIdSede());
+
+            // Agregar nombre de sede si existe la relación
+            if (dept.getSede() != null) {
+                deptData.put("nombreSede", dept.getSede().getNombreSede());
+            }
+
             response.add(deptData);
         }
-        
+
         return response;
     }
 
@@ -63,15 +74,13 @@ public class DepartamentoController {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El ID de la sede es obligatorio"));
             }
-            
-            // Como la entidad tiene los campos planos nombreDepartamento e idSede,
-            // Spring Boot mapea el JSON automáticamente. No necesitamos DTOs complejos aquí.
+
             Departamento nuevo = departamentoService.save(departamento);
-            
+
             Map<String, Object> response = new HashMap<>();
-            response.put("nombredepartamento", nuevo.getNombreDepartamento());
-            response.put("idsede", nuevo.getIdSede());
-            
+            response.put("nombreDepartamento", nuevo.getNombreDepartamento());
+            response.put("idSede", nuevo.getIdSede());
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -79,7 +88,6 @@ public class DepartamentoController {
         }
     }
 
-    // OJO: Manejo de llave compuesta en la URL
     @DeleteMapping("/{nombre}/{idSede}")
     public ResponseEntity<?> eliminar(@PathVariable String nombre, @PathVariable Integer idSede) {
         try {

@@ -9,7 +9,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,7 +49,8 @@ public class EquipamientoController {
     private EmpleadoMantieneEquipamientoRepository empleadoMantieneEquipamientoRepository;
 
     /**
-     * GET ALL - Listar todos los equipamientos
+     * GET ALL - Listar todos los equipamientos CORREGIDO: Usar camelCase
+     * consistente
      */
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getAllEquipamientos() {
@@ -60,15 +60,17 @@ public class EquipamientoController {
 
             for (Equipamiento e : equipamientos) {
                 Map<String, Object> equipData = new HashMap<>();
-                equipData.put("codequip", e.getCodEquip());
-                equipData.put("nombreequip", e.getNombreEquip());
-                equipData.put("fechamantenimiento", e.getFechaMantenimiento());
+                // ✅ CORRECCIÓN: camelCase consistente
+                equipData.put("codEquip", e.getCodEquip());
+                equipData.put("nombreEquip", e.getNombreEquip());
+                equipData.put("fechaMantenimiento", e.getFechaMantenimiento());
                 equipData.put("estado", e.getEstado());
                 response.add(equipData);
             }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -86,13 +88,14 @@ public class EquipamientoController {
 
             Equipamiento e = equipamientoOpt.get();
             Map<String, Object> equipData = new HashMap<>();
-            equipData.put("codequip", e.getCodEquip());
-            equipData.put("nombreequip", e.getNombreEquip());
-            equipData.put("fechamantenimiento", e.getFechaMantenimiento());
+            equipData.put("codEquip", e.getCodEquip());
+            equipData.put("nombreEquip", e.getNombreEquip());
+            equipData.put("fechaMantenimiento", e.getFechaMantenimiento());
             equipData.put("estado", e.getEstado());
 
             return ResponseEntity.ok(equipData);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -109,16 +112,18 @@ public class EquipamientoController {
             if (equipamiento.getEstado() == null || equipamiento.getEstado().isEmpty()) {
                 equipamiento.setEstado("Operativo");
             }
+
             Equipamiento saved = equipamientoService.save(equipamiento);
 
             Map<String, Object> equipData = new HashMap<>();
-            equipData.put("codequip", saved.getCodEquip());
-            equipData.put("nombreequip", saved.getNombreEquip());
-            equipData.put("fechamantenimiento", saved.getFechaMantenimiento());
+            equipData.put("codEquip", saved.getCodEquip());
+            equipData.put("nombreEquip", saved.getNombreEquip());
+            equipData.put("fechaMantenimiento", saved.getFechaMantenimiento());
             equipData.put("estado", saved.getEstado());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(equipData);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -137,6 +142,7 @@ public class EquipamientoController {
             }
 
             Equipamiento equipamiento = equipamientoOpt.get();
+
             if (equipamientoDetails.getNombreEquip() != null) {
                 equipamiento.setNombreEquip(equipamientoDetails.getNombreEquip());
             }
@@ -150,13 +156,14 @@ public class EquipamientoController {
             Equipamiento updated = equipamientoService.save(equipamiento);
 
             Map<String, Object> equipData = new HashMap<>();
-            equipData.put("codequip", updated.getCodEquip());
-            equipData.put("nombreequip", updated.getNombreEquip());
-            equipData.put("fechamantenimiento", updated.getFechaMantenimiento());
+            equipData.put("codEquip", updated.getCodEquip());
+            equipData.put("nombreEquip", updated.getNombreEquip());
+            equipData.put("fechaMantenimiento", updated.getFechaMantenimiento());
             equipData.put("estado", updated.getEstado());
 
             return ResponseEntity.ok(equipData);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -182,6 +189,7 @@ public class EquipamientoController {
             equipamientoService.deleteById(codEquip);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -199,18 +207,19 @@ public class EquipamientoController {
             List<Map<String, Object>> response = new ArrayList<>();
             for (EquipamientoUsaDepartamento asignacion : asignaciones) {
                 Map<String, Object> deptData = new HashMap<>();
-                deptData.put("nombredepartamento", asignacion.getNombreDepartamento());
-                deptData.put("idsede", asignacion.getIdSede());
+                deptData.put("nombreDepartamento", asignacion.getNombreDepartamento());
+                deptData.put("idSede", asignacion.getIdSede());
 
-                if (asignacion.getDepartamento() != null) {
-                    deptData.put("nombresede", asignacion.getDepartamento().getSede() != null
-                            ? asignacion.getDepartamento().getSede().getNombreSede()
-                            : "N/A");
+                if (asignacion.getDepartamento() != null && asignacion.getDepartamento().getSede() != null) {
+                    deptData.put("nombreSede", asignacion.getDepartamento().getSede().getNombreSede());
+                } else {
+                    deptData.put("nombreSede", "N/A");
                 }
                 response.add(deptData);
             }
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -225,19 +234,16 @@ public class EquipamientoController {
             String nombreDepartamento = (String) request.get("nombreDepartamento");
             Integer idSede = ((Number) request.get("idSede")).intValue();
 
-            // Validar que los parámetros no sean nulos
             if (nombreDepartamento == null || nombreDepartamento.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El nombre del departamento es obligatorio"));
             }
 
-            // Verificar que el equipamiento exista
             if (equipamientoService.findById(codEquip).isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Equipamiento no encontrado"));
             }
 
-            // Verificar que el departamento exista
             Optional<Departamento> departamento = departamentoRepository.findAll().stream()
                     .filter(d -> d.getNombreDepartamento().equals(nombreDepartamento) && d.getIdSede().equals(idSede))
                     .findFirst();
@@ -247,13 +253,11 @@ public class EquipamientoController {
                         .body(Map.of("error", "Departamento no encontrado en la sede seleccionada"));
             }
 
-            // Verificar si ya existe la asignación
             if (equipamientoUsaDepartamentoRepository.existsAssignment(codEquip, nombreDepartamento, idSede)) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Este equipamiento ya está asignado a este departamento"));
             }
 
-            // Crear la asignación
             EquipamientoUsaDepartamento asignacion = new EquipamientoUsaDepartamento();
             asignacion.setCodEquip(codEquip);
             asignacion.setNombreDepartamento(nombreDepartamento);
@@ -264,6 +268,7 @@ public class EquipamientoController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("message", "Equipamiento asignado correctamente"));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al asignar equipamiento: " + e.getMessage()));
         }
@@ -279,27 +284,25 @@ public class EquipamientoController {
             Integer numDocumento = ((Number) request.get("numDocumento")).intValue();
             Integer idEmpleado = ((Number) request.get("idEmpleado")).intValue();
 
-            // Validar que el equipamiento existe
             Optional<Equipamiento> equipamiento = equipamientoService.findById(codEquip);
             if (equipamiento.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El equipamiento no existe"));
             }
 
-            // Validar que el empleado existe
-            Optional<Empleado> empleado = empleadoRepository.findById(new com.gestion_medica.demo.model.keys.EmpleadoId(numDocumento, idEmpleado));
+            Optional<Empleado> empleado = empleadoRepository.findById(
+                    new com.gestion_medica.demo.model.keys.EmpleadoId(numDocumento, idEmpleado)
+            );
             if (empleado.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El empleado no existe"));
             }
 
-            // Verificar si ya existe la asignación
             if (empleadoMantieneEquipamientoRepository.existsAssignment(codEquip, numDocumento, idEmpleado)) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Este empleado ya está asignado al mantenimiento de este equipamiento"));
             }
 
-            // Crear la asignación
             EmpleadoMantieneEquipamiento asignacion = new EmpleadoMantieneEquipamiento();
             asignacion.setCodEquip(codEquip);
             asignacion.setNumDocumento(numDocumento);
@@ -310,6 +313,7 @@ public class EquipamientoController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("message", "Empleado asignado al mantenimiento correctamente"));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al asignar empleado: " + e.getMessage()));
         }
@@ -321,15 +325,14 @@ public class EquipamientoController {
     @GetMapping("/{codEquip}/mantenimiento/empleados")
     public ResponseEntity<?> getEmpleadosMantenimiento(@PathVariable Integer codEquip) {
         try {
-            // Validar que el equipamiento existe
             Optional<Equipamiento> equipamiento = equipamientoService.findById(codEquip);
             if (equipamiento.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El equipamiento no existe"));
             }
 
-            // Obtener empleados asignados
-            List<EmpleadoMantieneEquipamiento> asignaciones = empleadoMantieneEquipamientoRepository.findByCodEquip(codEquip);
+            List<EmpleadoMantieneEquipamiento> asignaciones
+                    = empleadoMantieneEquipamientoRepository.findByCodEquip(codEquip);
 
             List<Map<String, Object>> resultado = new ArrayList<>();
             for (EmpleadoMantieneEquipamiento asignacion : asignaciones) {
@@ -347,7 +350,6 @@ public class EquipamientoController {
                     map.put("numDocumento", asignacion.getNumDocumento());
                     map.put("cargo", emp.getCargo());
 
-                    // Datos de la persona anidados
                     if (emp.getPersona() != null) {
                         Map<String, Object> personaMap = new HashMap<>();
                         personaMap.put("nombrePersona", emp.getPersona().getNombrePersona());
@@ -358,13 +360,14 @@ public class EquipamientoController {
                         map.put("persona", personaMap);
                     }
 
-                    map.put("codequip", codEquip);
+                    map.put("codEquip", codEquip);
                     resultado.add(map);
                 }
             }
 
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al obtener empleados: " + e.getMessage()));
         }
@@ -379,15 +382,15 @@ public class EquipamientoController {
             @PathVariable Integer numDocumento,
             @PathVariable Integer idEmpleado) {
         try {
-            // Validar que el equipamiento existe
             Optional<Equipamiento> equipamiento = equipamientoService.findById(codEquip);
             if (equipamiento.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "El equipamiento no existe"));
             }
 
-            // Buscar y eliminar la asignación
-            List<EmpleadoMantieneEquipamiento> asignaciones = empleadoMantieneEquipamientoRepository.findByCodEquip(codEquip);
+            List<EmpleadoMantieneEquipamiento> asignaciones
+                    = empleadoMantieneEquipamientoRepository.findByCodEquip(codEquip);
+
             for (EmpleadoMantieneEquipamiento asignacion : asignaciones) {
                 if (asignacion.getNumDocumento().equals(numDocumento)
                         && asignacion.getIdEmpleado().equals(idEmpleado)) {
@@ -399,6 +402,7 @@ public class EquipamientoController {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "La asignación no existe"));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al remover empleado: " + e.getMessage()));
         }

@@ -1,5 +1,5 @@
-// pacientes.js - VERSIÓN CORREGIDA
-const API_URL = 'http://localhost:8080'; // ✅ Puerto correcto Spring Boot
+// pacientes.js - CORREGIDO
+const API_URL = 'http://localhost:8080';
 
 let currentPatient = null;
 let allPatients = [];
@@ -23,9 +23,10 @@ async function loadPatients() {
         }
         
         allPatients = await response.json();
+        console.log('✅ Pacientes cargados:', allPatients); // Debug
         renderPatients(allPatients);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error:', error);
         showNotification('Error al cargar los pacientes', 'error');
     }
 }
@@ -47,19 +48,20 @@ function renderPatients(patients) {
     }
     
     patients.forEach(patient => {
-        const edad = calcularEdad(patient.fechanacimiento);
+        // ✅ CORRECCIÓN: Usar camelCase consistente
+        const edad = calcularEdad(patient.fechaNacimiento);
         const row = `
             <tr>
-                <td>${patient.codpaciente}</td>
-                <td>${patient.nombrepersona} ${patient.apellidopersona}</td>
-                <td>${patient.tipodocumento} ${patient.numdocumento}</td>
-                <td>${patient.dirpaciente}</td>
+                <td>${patient.codPaciente}</td>
+                <td>${patient.nombrePersona} ${patient.apellidoPersona}</td>
+                <td>${patient.tipoDocumento} ${patient.numDocumento}</td>
+                <td>${patient.dirPaciente}</td>
                 <td>${patient.correo}</td>
                 <td>${edad} años</td>
                 <td>
                     <button class="btn-icon" onclick='editPatient(${JSON.stringify(patient).replace(/'/g, "&#39;")})' 
                             title="Editar">✏️</button>
-                    <button class="btn-icon" onclick="deletePatient(${patient.codpaciente}, ${patient.numdocumento})" 
+                    <button class="btn-icon" onclick="deletePatient(${patient.codPaciente}, ${patient.numDocumento})" 
                             title="Eliminar">🗑️</button>
                 </td>
             </tr>
@@ -93,16 +95,16 @@ function openModal(patient = null) {
         title.textContent = 'Editar Paciente';
         currentPatient = patient;
         
-        // Llenar formulario
-        document.getElementById('numDocumento').value = patient.numdocumento;
+        // ✅ CORRECCIÓN: Usar camelCase
+        document.getElementById('numDocumento').value = patient.numDocumento;
         document.getElementById('numDocumento').disabled = true;
-        document.getElementById('nombrePersona').value = patient.nombrepersona;
-        document.getElementById('apellidoPersona').value = patient.apellidopersona;
-        document.getElementById('tipoDocumento').value = patient.tipodocumento;
+        document.getElementById('nombrePersona').value = patient.nombrePersona;
+        document.getElementById('apellidoPersona').value = patient.apellidoPersona;
+        document.getElementById('tipoDocumento').value = patient.tipoDocumento;
         document.getElementById('genero').value = patient.genero;
-        document.getElementById('fechaNacimiento').value = patient.fechanacimiento;
+        document.getElementById('fechaNacimiento').value = patient.fechaNacimiento;
         document.getElementById('correo').value = patient.correo;
-        document.getElementById('dirPaciente').value = patient.dirpaciente;
+        document.getElementById('dirPaciente').value = patient.dirPaciente;
     } else {
         title.textContent = 'Nuevo Paciente';
         currentPatient = null;
@@ -124,10 +126,8 @@ function closeModal() {
 async function savePatient(event) {
     event.preventDefault();
     
-    const esNuevo = !currentPatient; // Determinar si es INSERT o UPDATE
+    const esNuevo = !currentPatient;
 
-
-    // ✅ Estructura que coincide con el backend
     const patientData = {
         persona: {
             numDocumento: parseInt(document.getElementById('numDocumento').value),
@@ -145,7 +145,7 @@ async function savePatient(event) {
     
     try {
         const url = currentPatient 
-            ? `${API_URL}/api/pacientes/${currentPatient.codpaciente}/${currentPatient.numdocumento}`
+            ? `${API_URL}/api/pacientes/${currentPatient.codPaciente}/${currentPatient.numDocumento}`
             : `${API_URL}/api/pacientes`;
         
         const method = currentPatient ? 'PUT' : 'POST';
@@ -166,7 +166,6 @@ async function savePatient(event) {
         
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'pacientes');
-
 
         showNotification(
             currentPatient ? 'Paciente actualizado correctamente' : 'Paciente creado correctamente',
@@ -205,7 +204,6 @@ async function deletePatient(codPaciente, numDocumento) {
         }
 
         await registrarAuditoria('DELETE', 'pacientes');
-
         
         showNotification('Paciente eliminado correctamente', 'success');
         loadPatients();
@@ -221,11 +219,12 @@ function filterPatients() {
     const sedeFilter = document.getElementById('filterSede').value;
     
     let filtered = allPatients.filter(patient => {
+        // ✅ CORRECCIÓN: Usar camelCase
         const matchesSearch = 
-            patient.nombrepersona.toLowerCase().includes(searchTerm) ||
-            patient.apellidopersona.toLowerCase().includes(searchTerm) ||
-            patient.numdocumento.toString().includes(searchTerm) ||
-            patient.correo.toLowerCase().includes(searchTerm);
+            (patient.nombrePersona || '').toLowerCase().includes(searchTerm) ||
+            (patient.apellidoPersona || '').toLowerCase().includes(searchTerm) ||
+            (patient.numDocumento || '').toString().includes(searchTerm) ||
+            (patient.correo || '').toLowerCase().includes(searchTerm);
         
         const matchesSede = !sedeFilter || true;
         
@@ -250,7 +249,9 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
-            document.body.removeChild(notification);
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
         }, 300);
     }, 3000);
 }

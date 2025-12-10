@@ -19,20 +19,22 @@ public class SedeController {
     private SedeHospitalariaRepository sedeRepository;
 
     /**
-     * GET - Listar todas las sedes
+     * GET - Listar todas las sedes CORREGIDO: Devuelve camelCase para
+     * consistencia
      */
     @GetMapping
     public List<Map<String, Object>> listar() {
         List<SedeHospitalaria> sedes = sedeRepository.findAll();
         List<Map<String, Object>> response = new ArrayList<>();
-        
+
         for (SedeHospitalaria sede : sedes) {
             Map<String, Object> sedeData = new HashMap<>();
+            // ✅ CORRECCIÓN: Usar camelCase consistente
             sedeData.put("idSede", sede.getIdSede());
             sedeData.put("nombreSede", sede.getNombreSede());
             response.add(sedeData);
         }
-        
+
         return response;
     }
 
@@ -40,9 +42,14 @@ public class SedeController {
      * GET - Obtener sede por ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<SedeHospitalaria> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<Map<String, Object>> obtenerPorId(@PathVariable Integer id) {
         return sedeRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(sede -> {
+                    Map<String, Object> sedeData = new HashMap<>();
+                    sedeData.put("idSede", sede.getIdSede());
+                    sedeData.put("nombreSede", sede.getNombreSede());
+                    return ResponseEntity.ok(sedeData);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -53,26 +60,27 @@ public class SedeController {
     public ResponseEntity<Map<String, Object>> actualizar(
             @PathVariable Integer id,
             @RequestBody SedeHospitalaria sedeActualizada) {
-        
+
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Verificar que la sede existe
             SedeHospitalaria sedeExistente = sedeRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
-            
+
             // Actualizar solo el nombre
             sedeExistente.setNombreSede(sedeActualizada.getNombreSede());
-            
+
             // Guardar cambios
             SedeHospitalaria sedeGuardada = sedeRepository.save(sedeExistente);
-            
+
             response.put("success", true);
             response.put("mensaje", "Sede actualizada correctamente");
-            response.put("sede", sedeGuardada);
-            
+            response.put("idSede", sedeGuardada.getIdSede());
+            response.put("nombreSede", sedeGuardada.getNombreSede());
+
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("mensaje", "Error al actualizar sede: " + e.getMessage());

@@ -35,7 +35,8 @@ public class PacienteController {
     private PersonaService personaService;
 
     /**
-     * GET ALL - Listar todos los pacientes con datos de persona
+     * GET ALL - Listar todos los pacientes con datos de persona CORREGIDO: Usar
+     * camelCase consistente
      */
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getAllPacientes() {
@@ -45,18 +46,19 @@ public class PacienteController {
 
             for (Paciente p : pacientes) {
                 Map<String, Object> pacienteData = new HashMap<>();
-                pacienteData.put("codpaciente", p.getCodPaciente());
-                pacienteData.put("numdocumento", p.getNumDocumento());
-                pacienteData.put("dirpaciente", p.getDirPaciente());
+                // ✅ CORRECCIÓN: camelCase consistente
+                pacienteData.put("codPaciente", p.getCodPaciente());
+                pacienteData.put("numDocumento", p.getNumDocumento());
+                pacienteData.put("dirPaciente", p.getDirPaciente());
 
                 // Datos de persona
                 if (p.getPersona() != null) {
                     Persona persona = p.getPersona();
-                    pacienteData.put("tipodocumento", persona.getTipoDocumento());
+                    pacienteData.put("tipoDocumento", persona.getTipoDocumento());
                     pacienteData.put("nombrePersona", persona.getNombrePersona());
                     pacienteData.put("apellidoPersona", persona.getApellidoPersona());
                     pacienteData.put("genero", persona.getGenero());
-                    pacienteData.put("fechanacimiento", persona.getFechaNacimiento());
+                    pacienteData.put("fechaNacimiento", persona.getFechaNacimiento());
                     pacienteData.put("correo", persona.getCorreo());
                 }
 
@@ -65,6 +67,7 @@ public class PacienteController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -88,28 +91,29 @@ public class PacienteController {
             Paciente p = pacienteOpt.get();
             Map<String, Object> response = new HashMap<>();
 
-            response.put("codpaciente", p.getCodPaciente());
-            response.put("numdocumento", p.getNumDocumento());
-            response.put("dirpaciente", p.getDirPaciente());
+            response.put("codPaciente", p.getCodPaciente());
+            response.put("numDocumento", p.getNumDocumento());
+            response.put("dirPaciente", p.getDirPaciente());
 
             if (p.getPersona() != null) {
                 Persona persona = p.getPersona();
-                response.put("tipodocumento", persona.getTipoDocumento());
-                response.put("nombrepersona", persona.getNombrePersona());
-                response.put("apellidopersona", persona.getApellidoPersona());
+                response.put("tipoDocumento", persona.getTipoDocumento());
+                response.put("nombrePersona", persona.getNombrePersona());
+                response.put("apellidoPersona", persona.getApellidoPersona());
                 response.put("genero", persona.getGenero());
-                response.put("fechanacimiento", persona.getFechaNacimiento());
+                response.put("fechaNacimiento", persona.getFechaNacimiento());
                 response.put("correo", persona.getCorreo());
             }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * POST - Crear nuevo paciente Recibe: { persona: {...}, paciente: {...} }
+     * POST - Crear nuevo paciente
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createPaciente(@RequestBody Map<String, Object> data) {
@@ -166,11 +170,12 @@ public class PacienteController {
 
             response.put("success", true);
             response.put("mensaje", "Paciente creado exitosamente");
-            response.put("codpaciente", savedPaciente.getCodPaciente());
+            response.put("codPaciente", savedPaciente.getCodPaciente());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e) {
+            e.printStackTrace();
             response.put("success", false);
             response.put("mensaje", "Error al crear paciente: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -243,6 +248,7 @@ public class PacienteController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            e.printStackTrace();
             response.put("success", false);
             response.put("mensaje", "Error al actualizar paciente: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -277,6 +283,7 @@ public class PacienteController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            e.printStackTrace();
             response.put("success", false);
             response.put("mensaje", "Error al eliminar paciente: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

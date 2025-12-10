@@ -1,4 +1,4 @@
-// sedes.js
+// sedes.js - CORREGIDO
 const API_URL = 'http://localhost:8080/api';
 let allSedes = [];
 
@@ -19,10 +19,11 @@ async function loadSedes() {
         if (!response.ok) throw new Error('Error al cargar sedes');
         
         allSedes = await response.json();
+        console.log('✅ Sedes cargadas:', allSedes); // Debug
         renderSedesGrid(allSedes);
         updateStats();
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error al cargar sedes:', error);
         showNotification('Error al cargar las sedes hospitalarias', 'error');
     }
 }
@@ -46,7 +47,7 @@ function renderSedesGrid(sedes) {
         const card = document.createElement('div');
         card.className = 'sede-card';
         
-        // Validación defensiva para campos undefined
+        // ✅ CORRECCIÓN: Usar camelCase
         const nombreSede = sede.nombreSede || 'Sin nombre';
         const idSede = sede.idSede || '';
         
@@ -130,6 +131,7 @@ function filterSedes() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     
     const filtered = allSedes.filter(sede => {
+        // ✅ CORRECCIÓN: Usar camelCase
         const nombreSede = (sede.nombreSede || '').toLowerCase();
         const idSede = (sede.idSede || '').toString();
         
@@ -137,29 +139,6 @@ function filterSedes() {
     });
     
     renderSedesGrid(filtered);
-}
-
-// ========== REGISTRAR AUDITORÍA ==========
-async function registrarAuditoria(accion, tabla) {
-    try {
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        
-        await fetch(`${API_URL}/auditoria/registrar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                accion: accion,
-                tabla: tabla,
-                ipOrigen: 'Web-Client',
-                idUsuario: usuario.idUsuario || null
-            })
-        });
-    } catch (error) {
-        console.error('Error al registrar auditoría:', error);
-    }
 }
 
 // ========== NOTIFICACIONES ==========
