@@ -1,4 +1,4 @@
-package com.gestion_medica.demo.Control;
+package com.gestion_medica.demo.control;
 
 import com.gestion_medica.demo.model.SedeHospitalaria;
 import com.gestion_medica.demo.repository.SedeHospitalariaRepository;

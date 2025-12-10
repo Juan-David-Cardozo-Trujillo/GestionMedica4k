@@ -1,17 +1,22 @@
-package com.gestion_medica.demo.Control;
-
-import com.gestion_medica.demo.model.AuditoriaAcceso;
-import com.gestion_medica.demo.model.Usuario;
-import com.gestion_medica.demo.repository.AuditoriaAccesoRepository;
-import com.gestion_medica.demo.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+package com.gestion_medica.demo.control;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.gestion_medica.demo.model.AuditoriaAcceso;
+import com.gestion_medica.demo.model.Usuario;
+import com.gestion_medica.demo.repository.AuditoriaAccesoRepository;
+import com.gestion_medica.demo.repository.UsuarioRepository;
 
 @RestController
 @RequestMapping("/api/auditoria")

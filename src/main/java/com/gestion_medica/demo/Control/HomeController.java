@@ -1,4 +1,4 @@
-package com.gestion_medica.demo.Control;
+package com.gestion_medica.demo.control;
 
 import java.util.HashMap;
 import java.util.Map;
