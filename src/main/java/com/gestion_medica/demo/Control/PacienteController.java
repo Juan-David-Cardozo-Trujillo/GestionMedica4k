@@ -34,6 +34,9 @@ public class PacienteController {
     @Autowired
     private PersonaService personaService;
 
+    @Autowired
+    private com.gestion_medica.demo.service.HistoriaClinicaService historiaClinicaService;
+
     /**
      * GET ALL - Listar todos los pacientes con datos de persona CORREGIDO: Usar
      * camelCase consistente
@@ -167,6 +170,19 @@ public class PacienteController {
             paciente.setPersona(persona);
 
             Paciente savedPaciente = pacienteService.save(paciente);
+
+            // Crear automáticamente Historia Clínica (si no existe)
+            try {
+                // Verificar si ya tiene historia para evitar duplicados (aunque es creación nueva)
+                // En este caso asumimos que es nuevo.
+                com.gestion_medica.demo.model.HistoriaClinica historia = new com.gestion_medica.demo.model.HistoriaClinica();
+                historia.setPaciente(savedPaciente);
+                historiaClinicaService.save(historia);
+                System.out.println("Historia Clínica creada automáticamente (desde PacienteController) para el paciente: " + savedPaciente.getCodPaciente());
+            } catch (Exception e) {
+                System.err.println("Error al crear historia automática en PacienteController: " + e.getMessage());
+                // No lanzamos error para no revertir la creación del paciente, pero al menos queda logueado
+            }
 
             response.put("success", true);
             response.put("mensaje", "Paciente creado exitosamente");

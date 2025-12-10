@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface HistoriaClinicaRegistraDiagnosticaRepository extends JpaRepository<HistoriaClinicaRegistraDiagnostica, HistoriaClinicaRegistraDiagnosticaId> {
+    
+    // Buscar diagnósticos por historia clínica
+    java.util.List<HistoriaClinicaRegistraDiagnostica> findByHistoriaClinicaCodHistoria(Integer codHistoria);
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -11,10 +11,13 @@
         <header>
             <h1>📋 Historias Clínicas</h1>
             <div style="display: flex; gap: 10px;">
+                <!-- Botón de crear eliminado por automatización -->
+                <!-- 
                 <button class="btn btn-primary" onclick="openModal()">
                     ➕ Nueva Historia Clínica
-                </button>
-                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
+                </button> 
+                -->
+                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
                     ← Volver
                 </button>
             </div>
@@ -23,9 +26,7 @@
         <div class="filters">
             <input type="text" id="searchInput" placeholder="🔍 Buscar por paciente o código..." 
                    oninput="filterHistorias()">
-            <select id="filterPaciente" onchange="filterHistorias()">
-                <option value="">Todos los pacientes</option>
-            </select>
+            <!-- Combo box eliminado a petición del usuario -->
         </div>
 
         <div class="stats-grid">
@@ -95,10 +96,11 @@
             <div class="diagnosticos-section">
                 <h3>🔬 Diagnósticos Registrados</h3>
                 <div id="diagnosticosList"></div>
-                
-                <button class="btn btn-primary" onclick="openDiagnosticoModal()">
-                    ➕ Agregar Diagnóstico
-                </button>
+            </div>
+
+            <div class="medicamentos-section" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <h3>💊 Medicamentos Prescritos</h3>
+                <div id="medicamentosList"></div>
             </div>
 
             <div class="form-actions">

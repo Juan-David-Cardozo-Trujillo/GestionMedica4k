@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
                 <button class="btn btn-primary" onclick="openModal()">
                     ➕ Nuevo Usuario
                 </button>
-                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
+                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
                     ← Volver
                 </button>
             </div>
@@ -158,9 +158,9 @@
                     <small class="form-hint">Campo requerido para pacientes</small>
                 </div>
 
-                <!-- Nuevo: Campos para Médicos -->
+                <!-- Nuevo: Campos para Médicos y Técnicos -->
                 <div id="medicoFields" style="display:none;">
-                    <h3 class="section-title">🏥 Datos del Médico</h3>
+                    <h3 class="section-title">🏥 Datos Laborales</h3>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -168,7 +168,7 @@
                             <select id="departamento">
                                 <option value="">Cargando departamentos...</option>
                             </select>
-                            <small class="form-hint">Departamento donde trabajará el médico</small>
+                            <small class="form-hint">Departamento asignado</small>
                         </div>
                         <div class="form-group">
                             <label>Sede *</label>

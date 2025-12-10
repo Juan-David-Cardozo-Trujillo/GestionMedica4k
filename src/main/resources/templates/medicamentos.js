@@ -1,5 +1,5 @@
 // medicamentos.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 let currentMedicamento = null;
 let allMedicamentos = [];
 let userRole = localStorage.getItem('userRole') || 'AsistenteBodega';
@@ -11,10 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Verificar permisos
 function checkPermissions() {
-    const readOnlyRoles = ['Medico', 'TecnicoMantenimiento'];
-    if (readOnlyRoles.includes(userRole)) {
-        document.getElementById('btnNuevo').style.display = 'none';
-        document.querySelector('.acciones-col').style.display = 'none';
+    // Si el rol es Medico, ocultar botón nuevo y columna acciones se manejará en render
+    if (userRole === 'Medico') {
+        const btnNuevo = document.getElementById('btnNuevo');
+        if (btnNuevo) btnNuevo.style.display = 'none';
+    }
+
+    // Roles con permiso de escritura
+    const writeRoles = ['AsistenteBodega', 'Asistente de Bodega', 'Administrador'];
+
+    // Si NO tiene permiso, ocultar botón nuevo
+    if (!writeRoles.includes(userRole)) {
+        const btnNuevo = document.getElementById('btnNuevo');
+        if (btnNuevo) btnNuevo.style.display = 'none';
     }
 }
 
@@ -24,9 +33,9 @@ async function loadMedicamentos() {
         const response = await fetch(`${API_URL}/medicamentos`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) throw new Error('Error al cargar');
-        
+
         allMedicamentos = await response.json();
         renderMedicamentos(allMedicamentos);
         updateStats();
@@ -41,7 +50,7 @@ async function loadMedicamentos() {
 function renderMedicamentos(medicamentos) {
     const tbody = document.getElementById('medicamentosBody');
     tbody.innerHTML = '';
-    
+
     if (medicamentos.length === 0) {
         tbody.innerHTML = `
             <tr><td colspan="8" style="text-align:center; padding:40px;">
@@ -50,25 +59,23 @@ function renderMedicamentos(medicamentos) {
         `;
         return;
     }
-    
+
     medicamentos.forEach(med => {
-        const stockClass = med.stock < 50 ? 'stock-bajo' : 
-                          med.stock < 200 ? 'stock-medio' : 'stock-alto';
+        const stockClass = med.stock < 50 ? 'stock-bajo' :
+            med.stock < 200 ? 'stock-medio' : 'stock-alto';
         const estadoClass = med.stock > 0 ? 'disponible' : 'agotado';
         const estado = med.stock > 0 ? 'Disponible' : 'Agotado';
-        
-        const accionesHTML = userRole === 'AsistenteBodega' || userRole === 'Administrador' ? `
-            <button class="btn-icon" onclick="showDetails(${med.codmed})" title="Ver">👁️</button>
+
+        // Solo mostrar acciones si tiene permisos (Asistente), pero SIN el botón de ver (ojo)
+        const accionesHTML = ['AsistenteBodega', 'Asistente de Bodega', 'Administrador'].includes(userRole) ? `
             <button class="btn-icon" onclick='editMedicamento(${JSON.stringify(med)})' title="Editar">✏️</button>
-            <button class="btn-icon" onclick="deleteMedicamento(${med.codmed})" title="Eliminar">🗑️</button>
-        ` : `
-            <button class="btn-icon" onclick="showDetails(${med.codmed})" title="Ver">👁️</button>
-        `;
-        
+            <button class="btn-icon" onclick="deleteMedicamento(${med.codMed})" title="Eliminar">🗑️</button>
+        ` : ''; // Si no es asistente, no mostramos nada o texto de solo lectura
+
         tbody.innerHTML += `
             <tr>
-                <td>${med.codmed}</td>
-                <td>${med.nombremed}</td>
+                <td>${med.codMed}</td>
+                <td>${med.nombreMed}</td>
                 <td>${med.descripcion}</td>
                 <td>${med.unidad}</td>
                 <td><span class="stock-badge ${stockClass}">${med.stock}</span></td>
@@ -83,9 +90,9 @@ function renderMedicamentos(medicamentos) {
 // Actualizar estadísticas
 function updateStats() {
     document.getElementById('totalMedicamentos').textContent = allMedicamentos.length;
-    document.getElementById('stockBajo').textContent = 
+    document.getElementById('stockBajo').textContent =
         allMedicamentos.filter(m => m.stock < 50).length;
-    document.getElementById('disponibles').textContent = 
+    document.getElementById('disponibles').textContent =
         allMedicamentos.filter(m => m.stock > 0).length;
 }
 
@@ -103,11 +110,11 @@ function openModal(medicamento = null) {
     const modal = document.getElementById('medicamentoModal');
     const form = document.getElementById('medicamentoForm');
     const title = document.getElementById('modalTitle');
-    
+
     if (medicamento) {
         title.textContent = 'Editar Medicamento';
         currentMedicamento = medicamento;
-        document.getElementById('nombreMed').value = medicamento.nombremed;
+        document.getElementById('nombreMed').value = medicamento.nombreMed;
         document.getElementById('descripcion').value = medicamento.descripcion;
         document.getElementById('unidad').value = medicamento.unidad;
         document.getElementById('stock').value = medicamento.stock;
@@ -117,7 +124,7 @@ function openModal(medicamento = null) {
         currentMedicamento = null;
         form.reset();
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -131,7 +138,7 @@ async function saveMedicamento(event) {
     event.preventDefault();
 
     const esNuevo = !currentMedicamento; // Determinar si es INSERT o UPDATE
-    
+
     const data = {
         nombreMed: document.getElementById('nombreMed').value.trim(),
         descripcion: document.getElementById('descripcion').value.trim(),
@@ -139,13 +146,13 @@ async function saveMedicamento(event) {
         stock: parseInt(document.getElementById('stock').value),
         proveedor: document.getElementById('proveedor').value.trim()
     };
-    
+
     try {
-        const url = currentMedicamento 
-            ? `${API_URL}/medicamentos/${currentMedicamento.codmed}`
+        const url = currentMedicamento
+            ? `${API_URL}/medicamentos/${currentMedicamento.codMed}`
             : `${API_URL}/medicamentos`;
         const method = currentMedicamento ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -154,12 +161,12 @@ async function saveMedicamento(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) throw new Error('Error al guardar');
 
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'medicamentos');
-        
+
         showNotification('Medicamento guardado correctamente', 'success');
         closeModal();
         loadMedicamentos();
@@ -180,19 +187,19 @@ async function showDetails(codMed) {
         const response = await fetch(`${API_URL}/medicamentos/${codMed}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         const med = await response.json();
         currentMedicamento = med;
-        
-        const stockClass = med.stock < 50 ? 'stock-bajo' : 
-                          med.stock < 200 ? 'stock-medio' : 'stock-alto';
-        
+
+        const stockClass = med.stock < 50 ? 'stock-bajo' :
+            med.stock < 200 ? 'stock-medio' : 'stock-alto';
+
         document.getElementById('medicamentoDetalles').innerHTML = `
             <div class="detail-row">
-                <strong>Código:</strong> <span>${med.codmed}</span>
+                <strong>Código:</strong> <span>${med.codMed}</span>
             </div>
             <div class="detail-row">
-                <strong>Nombre:</strong> <span>${med.nombremed}</span>
+                <strong>Nombre:</strong> <span>${med.nombreMed}</span>
             </div>
             <div class="detail-row">
                 <strong>Descripción:</strong> <span>${med.descripcion}</span>
@@ -214,15 +221,17 @@ async function showDetails(codMed) {
                 </span>
             </div>
         `;
-        
+
         // Mostrar u ocultar sección de actualizar stock según rol
         const stockSection = document.querySelector('.stock-section');
-        if (userRole === 'AsistenteBodega' || userRole === 'Administrador') {
+        const writeRoles = ['AsistenteBodega', 'Asistente de Bodega', 'Administrador'];
+
+        if (writeRoles.includes(userRole)) {
             stockSection.style.display = 'block';
         } else {
             stockSection.style.display = 'none';
         }
-        
+
         document.getElementById('detallesModal').style.display = 'block';
     } catch (error) {
         console.error('Error:', error);
@@ -239,22 +248,22 @@ function closeDetallesModal() {
 // Actualizar stock
 async function updateStock(event) {
     event.preventDefault();
-    
+
     const tipo = document.getElementById('tipoMovimiento').value;
     const cantidad = parseInt(document.getElementById('cantidadMovimiento').value);
     const motivo = document.getElementById('motivoMovimiento').value;
-    
-    const nuevoStock = tipo === 'entrada' 
+
+    const nuevoStock = tipo === 'entrada'
         ? currentMedicamento.stock + cantidad
         : currentMedicamento.stock - cantidad;
-    
+
     if (nuevoStock < 0) {
         showNotification('Stock insuficiente para realizar la salida', 'error');
         return;
     }
-    
+
     try {
-        const response = await fetch(`${API_URL}/medicamentos/${currentMedicamento.codmed}`, {
+        const response = await fetch(`${API_URL}/medicamentos/${currentMedicamento.codMed}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -265,11 +274,11 @@ async function updateStock(event) {
                 stock: nuevoStock
             })
         });
-        
+
         if (!response.ok) throw new Error('Error al actualizar');
 
         await registrarAuditoria('UPDATE', 'medicamentos');
-        
+
         showNotification(`Stock actualizado: ${tipo === 'entrada' ? '+' : '-'}${cantidad} unidades`, 'success');
         closeDetallesModal();
         loadMedicamentos();
@@ -282,17 +291,17 @@ async function updateStock(event) {
 // Eliminar medicamento
 async function deleteMedicamento(codMed) {
     if (!confirm('¿Eliminar este medicamento?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/medicamentos/${codMed}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) throw new Error('Error');
 
         await registrarAuditoria('DELETE', 'medicamentos');
-        
+
         showNotification('Medicamento eliminado', 'success');
         loadMedicamentos();
     } catch (error) {
@@ -305,22 +314,22 @@ function filterMedicamentos() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const stockFilter = document.getElementById('filterStock').value;
     const proveedorFilter = document.getElementById('filterProveedor').value;
-    
+
     const filtered = allMedicamentos.filter(med => {
-        const matchSearch = med.nombremed.toLowerCase().includes(search) ||
-                          med.descripcion.toLowerCase().includes(search) ||
-                          med.codmed.toString().includes(search);
-        
+        const matchSearch = med.nombreMed.toLowerCase().includes(search) ||
+            med.descripcion.toLowerCase().includes(search) ||
+            med.codMed.toString().includes(search);
+
         let matchStock = true;
         if (stockFilter === 'bajo') matchStock = med.stock < 50;
         if (stockFilter === 'medio') matchStock = med.stock >= 50 && med.stock <= 200;
         if (stockFilter === 'alto') matchStock = med.stock > 200;
-        
+
         const matchProveedor = !proveedorFilter || med.proveedor === proveedorFilter;
-        
+
         return matchSearch && matchStock && matchProveedor;
     });
-    
+
     renderMedicamentos(filtered);
 }
 

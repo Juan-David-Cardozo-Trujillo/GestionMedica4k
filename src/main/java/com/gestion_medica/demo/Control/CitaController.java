@@ -42,13 +42,34 @@ public class CitaController {
     @Autowired
     private PacienteService pacienteService;
 
+    @Autowired
+    private com.gestion_medica.demo.repository.CitaDiagnosticaEnfermedadRepository citaDiagnosticaEnfermedadRepository;
+    
+    @Autowired
+    private com.gestion_medica.demo.repository.CitaPrescribeMedicamentoRepository citaPrescribeMedicamentoRepository;
+    
+    @Autowired
+    private com.gestion_medica.demo.repository.EnfermedadRepository enfermedadRepository;
+    
+    @Autowired
+    private com.gestion_medica.demo.repository.MedicamentoRepository medicamentoRepository;
+    
+    @Autowired
+    private com.gestion_medica.demo.repository.HistoriaClinicaRepository historiaClinicaRepository;
+
     /**
-     * GET ALL - Listar todas las citas
+     * GET ALL - Listar todas las citas, opcionalmente filtradas por médico
      */
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllCitas() {
+    public ResponseEntity<List<Map<String, Object>>> getAllCitas(@org.springframework.web.bind.annotation.RequestParam(required = false) Integer idEmpleado) {
         try {
-            List<Cita> citas = citaService.findAll();
+            List<Cita> citas;
+            if (idEmpleado != null) {
+                citas = citaService.findByEmpleadoId(idEmpleado);
+            } else {
+                citas = citaService.findAll();
+            }
+
             List<Map<String, Object>> response = new ArrayList<>();
 
             for (Cita cita : citas) {
@@ -326,6 +347,146 @@ public class CitaController {
             error.put("success", false);
             error.put("message", "Error al eliminar la cita: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    /**
+     * POST - Registrar diagnóstico en una cita
+     */
+    @PostMapping("/{idCita}/diagnostico")
+    public ResponseEntity<Map<String, Object>> registrarDiagnostico(
+            @PathVariable Integer idCita,
+            @RequestBody Map<String, Object> payload) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Integer idEnfermedad = Integer.parseInt(payload.get("idEnfermedad").toString());
+            
+            // Verificar existencia
+            Optional<Cita> citaOpt = citaService.findById(idCita);
+            if (citaOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Cita no encontrada");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // Verificar enfermedad (opcional pero recomendado)
+            if (!enfermedadRepository.existsById(idEnfermedad)) {
+                response.put("success", false);
+                response.put("message", "Enfermedad no encontrada");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // Crear registro
+            com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad registro = new com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad();
+            registro.setIdCita(idCita);
+            registro.setIdEnfermedad(idEnfermedad);
+            
+            citaDiagnosticaEnfermedadRepository.save(registro);
+            
+            // Actualizar estado de la cita a "Tomada"
+            Cita cita = citaOpt.get();
+            cita.setEstado("Tomada");
+            citaService.save(cita);
+            
+            response.put("success", true);
+            response.put("message", "Diagnóstico registrado exitosamente");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error al registrar diagnóstico: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    /**
+     * POST - Registrar prescripción para una cita
+     */
+    @PostMapping("/{idCita}/prescripcion")
+    public ResponseEntity<Map<String, Object>> registrarPrescripcion(
+            @PathVariable Integer idCita,
+            @RequestBody Map<String, Object> payload) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Integer codMed = Integer.parseInt(payload.get("codMed").toString());
+            String dosis = payload.get("dosis").toString();
+            String frecuencia = payload.get("frecuencia").toString();
+            String duracion = payload.get("duracion").toString();
+            
+            // Verificar Cita
+            Optional<Cita> citaOpt = citaService.findById(idCita);
+            if (!citaOpt.isPresent()) {
+                response.put("success", false);
+                response.put("message", "Cita no encontrada");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            Cita cita = citaOpt.get();
+            
+            // Verificar Medicamento
+            if (!medicamentoRepository.existsById(codMed)) {
+                response.put("success", false);
+                response.put("message", "Medicamento no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // Buscar Historia Clínica del Paciente
+            if (cita.getPaciente() == null) {
+                response.put("success", false);
+                response.put("message", "La cita no tiene paciente asociado");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            Optional<com.gestion_medica.demo.model.HistoriaClinica> historiaOpt = 
+                historiaClinicaRepository.findByPacienteCodPaciente(cita.getPaciente().getCodPaciente());
+                
+            if (!historiaOpt.isPresent()) {
+                response.put("success", false);
+                // Intentar buscar historia por create-on-demand si no existe?
+                // Por ahora retornamos error, ya que debería existir
+                response.put("message", "El paciente no tiene historia clínica (asegúrese de crearla primero)");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // Verificar si ya existe prescripción para evitar 500
+            com.gestion_medica.demo.model.keys.CitaPrescribeMedicamentoId id = 
+                new com.gestion_medica.demo.model.keys.CitaPrescribeMedicamentoId(idCita, codMed);
+                
+            if (citaPrescribeMedicamentoRepository.existsById(id)) {
+                // Actualizar existente o retornar error?
+                // Vamos a borrar el anterior y crear el nuevo para actualizar
+                citaPrescribeMedicamentoRepository.deleteById(id);
+            }
+            
+            // Crear Prescripción
+            com.gestion_medica.demo.model.CitaPrescribeMedicamento prescripcion = new com.gestion_medica.demo.model.CitaPrescribeMedicamento();
+            prescripcion.setIdCita(idCita);
+            prescripcion.setCodMed(codMed);
+            prescripcion.setHistoriaClinica(historiaOpt.get());
+            prescripcion.setDosis(dosis);
+            prescripcion.setFrecuencia(frecuencia);
+            prescripcion.setDuracion(duracion);
+            prescripcion.setFechaEmision(java.time.LocalDate.now());
+            
+            citaPrescribeMedicamentoRepository.save(prescripcion);
+            
+            // Asegurar que la cita quede marcada como "Tomada" si no lo estaba
+            if (!"Tomada".equals(cita.getEstado())) {
+                cita.setEstado("Tomada");
+                citaService.save(cita);
+            }
+            
+            response.put("success", true);
+            response.put("message", "Prescripción registrada exitosamente");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error al registrar prescripción: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

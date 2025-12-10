@@ -1,6 +1,6 @@
 package com.gestion_medica.demo.repository;
 
-import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,5 +11,6 @@ import com.gestion_medica.demo.model.HistoriaClinica;
 public interface HistoriaClinicaRepository extends JpaRepository<HistoriaClinica, Integer> {
     
     // Buscar historia clínica por código de paciente
-    List<HistoriaClinica> findByCodPaciente(Integer codPaciente);
+    // Buscar historia clínica por código de paciente
+    Optional<HistoriaClinica> findByPacienteCodPaciente(Integer codPaciente);
 }

@@ -30,4 +30,8 @@ public class CitaService {
     public void deleteById(Integer id) {
         repository.deleteById(id);
     }
+
+    public List<Cita> findByEmpleadoId(Integer idEmpleado) {
+        return repository.findByEmpleadoIdEmpleado(idEmpleado);
+    }
 }

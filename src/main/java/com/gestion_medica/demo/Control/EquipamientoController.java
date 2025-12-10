@@ -53,9 +53,38 @@ public class EquipamientoController {
      * consistente
      */
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllEquipamientos() {
+    public ResponseEntity<List<Map<String, Object>>> getAllEquipamientos(@org.springframework.web.bind.annotation.RequestParam(required = false) Integer idEmpleado) {
         try {
-            List<Equipamiento> equipamientos = equipamientoService.findAll();
+            List<Equipamiento> equipamientos;
+
+            if (idEmpleado != null) {
+                // Filtrar por empleado asignado
+                List<EmpleadoMantieneEquipamiento> asignaciones = empleadoMantieneEquipamientoRepository.findByIdEmpleado(idEmpleado);
+                List<Integer> idsEquipos = asignaciones.stream()
+                        .map(EmpleadoMantieneEquipamiento::getCodEquip)
+                        .toList();
+                
+                // Si no tiene asignaciones, retornar lista vacía (o manejar como prefieras)
+                if (idsEquipos.isEmpty()) {
+                    equipamientos = new ArrayList<>();
+                } else {
+                    // Obtener solo los equipos asignados. 
+                    // Nota: JpaRepository tiene findAllById, pero devuelve List<T>. 
+                    // Si EquipamientoService no lo expone, usaremos el ropository directamente o filtraremos findAll()
+                    // Vamos a filtrar findAll() para no romper capas si el servicio no lo tiene expuesto, 
+                    // o mejor, usar el servicio si tiene findAll().
+                    // Opción más limpia: traer todos y filtrar (si son pocos) o usar repositorio.
+                    // Dado que el controller tiene acceso a EquipamientoService, revisemos si tiene findAllById.
+                    // Asumiremos que findAll() es seguro por ahora.
+                    List<Equipamiento> todos = equipamientoService.findAll();
+                    equipamientos = todos.stream()
+                            .filter(e -> idsEquipos.contains(e.getCodEquip()))
+                            .toList();
+                }
+            } else {
+                equipamientos = equipamientoService.findAll();
+            }
+
             List<Map<String, Object>> response = new ArrayList<>();
 
             for (Equipamiento e : equipamientos) {
@@ -230,13 +259,13 @@ public class EquipamientoController {
     @PostMapping("/asignar")
     public ResponseEntity<Map<String, String>> asignarDepartamento(@RequestBody Map<String, Object> request) {
         try {
-            Integer codEquip = ((Number) request.get("codEquip")).intValue();
+            Integer codEquip = parseInteger(request.get("codEquip"));
             String nombreDepartamento = (String) request.get("nombreDepartamento");
-            Integer idSede = ((Number) request.get("idSede")).intValue();
+            Integer idSede = parseInteger(request.get("idSede"));
 
-            if (nombreDepartamento == null || nombreDepartamento.isEmpty()) {
+            if (codEquip == null || idSede == null || nombreDepartamento == null || nombreDepartamento.isEmpty()) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "El nombre del departamento es obligatorio"));
+                        .body(Map.of("error", "Todos los campos (codEquip, nombreDepartamento, idSede) son obligatorios"));
             }
 
             if (equipamientoService.findById(codEquip).isEmpty()) {
@@ -280,9 +309,14 @@ public class EquipamientoController {
     @PostMapping("/mantenimiento/asignar-empleado")
     public ResponseEntity<?> asignarEmpleadoMantenimiento(@RequestBody Map<String, Object> request) {
         try {
-            Integer codEquip = ((Number) request.get("codEquip")).intValue();
-            Integer numDocumento = ((Number) request.get("numDocumento")).intValue();
-            Integer idEmpleado = ((Number) request.get("idEmpleado")).intValue();
+            Integer codEquip = parseInteger(request.get("codEquip"));
+            Integer numDocumento = parseInteger(request.get("numDocumento"));
+            Integer idEmpleado = parseInteger(request.get("idEmpleado"));
+
+            if (codEquip == null || numDocumento == null || idEmpleado == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Todos los campos (codEquip, numDocumento, idEmpleado) son obligatorios"));
+            }
 
             Optional<Equipamiento> equipamiento = equipamientoService.findById(codEquip);
             if (equipamiento.isEmpty()) {
@@ -406,5 +440,17 @@ public class EquipamientoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al remover empleado: " + e.getMessage()));
         }
+    }
+    private Integer parseInteger(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        } else if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 }

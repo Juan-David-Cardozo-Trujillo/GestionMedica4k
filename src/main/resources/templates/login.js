@@ -5,7 +5,7 @@ const API_URL = 'http://localhost:8080';
 function togglePassword() {
     const passwordInput = document.getElementById('password');
     const toggleIcon = document.querySelector('.toggle-password');
-    
+
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         toggleIcon.textContent = '🙈';
@@ -18,21 +18,21 @@ function togglePassword() {
 // Manejar login
 async function handleLogin(event) {
     event.preventDefault();
-    
+
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const rememberMe = document.getElementById('rememberMe').checked;
-    
+
     if (!username || !password) {
         showAlert('Por favor complete todos los campos', 'error');
         return;
     }
-    
+
     // Mostrar loader
     const btnLogin = document.getElementById('btnLogin');
     const btnText = btnLogin.querySelector('.btn-text');
     const btnLoader = btnLogin.querySelector('.btn-loader');
-    
+
     btnLogin.disabled = true;
     btnText.style.display = 'none';
     btnLoader.style.display = 'inline-block';
@@ -50,38 +50,46 @@ async function handleLogin(event) {
         });
 
         const data = await response.json();
-        
+
         console.log('Respuesta del servidor:', data);
 
         // --- CORRECCIÓN IMPORTANTE AQUÍ ---
         // Tu servidor devuelve 'success', no 'ok'
-        if (data.success === true) { 
-            
+        if (data.success === true) {
+
             // Guardar información del usuario en localStorage
             localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            
+
             // Aseguramos que existan los datos antes de guardarlos
             if (data.usuario) {
+                console.log('Datos del usuario recibidos:', data.usuario); // DEBUG
                 localStorage.setItem('userRole', data.usuario.rol || 'Usuario');
                 localStorage.setItem('userName', data.usuario.nombreUsuario || username);
                 localStorage.setItem('userId', data.usuario.idUsuario || '');
+                if (data.usuario.idEmpleado) {
+                    console.log('Guardando idEmpleado:', data.usuario.idEmpleado); // DEBUG
+                    localStorage.setItem('idEmpleado', data.usuario.idEmpleado);
+                } else {
+                    console.warn('ADVERTENCIA: No se recibió idEmpleado para este usuario en el login.'); // DEBUG
+                    localStorage.removeItem('idEmpleado');
+                }
             }
-            
+
             if (rememberMe) {
                 localStorage.setItem('rememberMe', 'true');
             }
-            
+
             showAlert('¡Inicio de sesión exitoso!', 'success');
-            
+
             // Redirección explícita al archivo HTML
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 1000); // Un pequeño retraso para que veas el mensaje de éxito
-            
+
         } else {
             showAlert(data.mensaje || 'Usuario o contraseña incorrectos', 'error');
         }
-        
+
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error de conexión con el servidor', 'error');
@@ -99,7 +107,7 @@ function showAlert(message, type) {
     alert.textContent = message;
     alert.className = `alert alert-${type}`;
     alert.style.display = 'block';
-    
+
     setTimeout(() => {
         alert.style.display = 'none';
     }, 4000);

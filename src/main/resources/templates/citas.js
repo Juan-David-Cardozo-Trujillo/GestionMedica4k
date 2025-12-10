@@ -20,7 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDoctors();
     renderCalendar();
     setMinDate();
+    checkPermissions();
 });
+
+// Verificar permisos
+function checkPermissions() {
+    const role = localStorage.getItem('userRole');
+    if (role === 'Medico' || role === 'Médico') {
+        const btnNuevaCita = document.getElementById('btnNuevaCita');
+        if (btnNuevaCita) btnNuevaCita.style.display = 'none';
+    }
+}
 
 // Establecer fecha mínima (hoy)
 function setMinDate() {
@@ -31,20 +41,29 @@ function setMinDate() {
 // Cargar citas
 async function loadAppointments() {
     try {
-        console.log('Intentando cargar citas desde:', `${API_URL}/citas`);
-        const response = await fetch(`${API_URL}/citas`);
-        
+        let url = `${API_URL}/citas`;
+        const role = localStorage.getItem('userRole');
+        const idEmpleado = localStorage.getItem('idEmpleado');
+
+        if ((role === 'Medico' || role === 'Médico') && idEmpleado) {
+            console.log('Filtrando citas para médico con ID:', idEmpleado);
+            url += `?idEmpleado=${idEmpleado}`;
+        }
+
+        console.log('Intentando cargar citas desde:', url);
+        const response = await fetch(url);
+
         console.log('Respuesta recibida:', response.status, response.statusText);
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Error en respuesta:', errorText);
             throw new Error('Error al cargar citas');
         }
-        
+
         const data = await response.json();
         console.log('Datos de citas recibidos:', data);
-        
+
         allAppointments = data;
         if (viewMode === 'list') {
             renderAppointmentsList(allAppointments);
@@ -62,11 +81,11 @@ async function loadPatients() {
         console.log('Cargando pacientes desde:', `${API_URL}/pacientes`);
         const response = await fetch(`${API_URL}/pacientes`);
         console.log('Respuesta pacientes:', response.status);
-        
+
         if (!response.ok) {
             throw new Error('Error al cargar pacientes');
         }
-        
+
         patients = await response.json();
         console.log('Pacientes cargados:', patients.length);
         populatePatientSelect();
@@ -82,17 +101,17 @@ async function loadDoctors() {
         console.log('Cargando empleados desde:', `${API_URL}/empleados`);
         const response = await fetch(`${API_URL}/empleados`);
         console.log('Respuesta empleados:', response.status);
-        
+
         if (!response.ok) {
             throw new Error('Error al cargar empleados');
         }
-        
+
         const empleados = await response.json();
         console.log('Empleados cargados:', empleados.length);
         console.log('Empleados recibidos:', empleados);
         // Filtrar solo los médicos (aceptar diferentes variaciones)
         doctors = empleados.filter(emp => emp.cargo && (
-            emp.cargo.toLowerCase() === 'medico' || 
+            emp.cargo.toLowerCase() === 'medico' ||
             emp.cargo.toLowerCase() === 'médico' ||
             emp.cargo.toLowerCase().includes('medic')
         ));
@@ -112,8 +131,8 @@ function populatePatientSelect() {
     select.innerHTML = '<option value="">Seleccione un paciente</option>';
     patients.forEach(p => {
         select.innerHTML += `
-            <option value="${p.codpaciente}" data-documento="${p.numdocumento}">
-                ${p.nombrePersona} ${p.apellidoPersona} - ${p.numdocumento}
+            <option value="${p.codPaciente}" data-documento="${p.numDocumento}">
+                ${p.nombrePersona} ${p.apellidoPersona} - ${p.numDocumento}
             </option>
         `;
     });
@@ -155,19 +174,19 @@ function populateDoctorFilter() {
 function renderCalendar() {
     const calendar = document.getElementById('calendar');
     const monthTitle = document.getElementById('currentMonth');
-    
+
     // Actualizar título
     monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    
+
     // Obtener primer y último día del mes
     const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     const startingDayOfWeek = firstDay.getDay();
     const totalDays = lastDay.getDate();
-    
+
     // Limpiar calendario
     calendar.innerHTML = '';
-    
+
     // Encabezados de días
     const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     dayHeaders.forEach(day => {
@@ -176,47 +195,47 @@ function renderCalendar() {
         header.textContent = day;
         calendar.appendChild(header);
     });
-    
+
     // Días vacíos antes del primer día
     for (let i = 0; i < startingDayOfWeek; i++) {
         const emptyDay = document.createElement('div');
         emptyDay.className = 'calendar-day empty';
         calendar.appendChild(emptyDay);
     }
-    
+
     // Días del mes
     for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day';
-        
+
         const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         if (currentDayDate.getTime() === today.getTime()) {
             dayDiv.classList.add('today');
         }
-        
+
         dayDiv.innerHTML = `<div class="day-number">${day}</div>`;
-        
+
         // Filtrar citas de este día
         const dayAppointments = allAppointments.filter(apt => {
             const aptDate = new Date(apt.fecha);
-            return aptDate.getDate() === day && 
-                   aptDate.getMonth() === currentDate.getMonth() && 
-                   aptDate.getFullYear() === currentDate.getFullYear();
+            return aptDate.getDate() === day &&
+                aptDate.getMonth() === currentDate.getMonth() &&
+                aptDate.getFullYear() === currentDate.getFullYear();
         });
-        
+
         // Agregar citas al día
         if (dayAppointments.length > 0) {
             const appointmentsContainer = document.createElement('div');
             appointmentsContainer.className = 'day-appointments';
-            
+
             dayAppointments.slice(0, 3).forEach(apt => {
                 const pacienteNombre = apt.paciente && apt.paciente.nombrePersona
                     ? apt.paciente.nombrePersona
                     : 'Paciente';
-                
+
                 const aptDiv = document.createElement('div');
                 aptDiv.className = `appointment-item ${apt.estado.toLowerCase()}`;
                 aptDiv.innerHTML = `
@@ -229,25 +248,31 @@ function renderCalendar() {
                 };
                 appointmentsContainer.appendChild(aptDiv);
             });
-            
+
             if (dayAppointments.length > 3) {
                 const moreDiv = document.createElement('div');
                 moreDiv.className = 'more-appointments';
                 moreDiv.textContent = `+${dayAppointments.length - 3} más`;
                 appointmentsContainer.appendChild(moreDiv);
             }
-            
+
             dayDiv.appendChild(appointmentsContainer);
         }
-        
-        // Click en el día para crear cita
-        dayDiv.onclick = () => {
-            const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-            const dateString = selectedDate.toISOString().split('T')[0];
-            document.getElementById('fecha').value = dateString;
-            openModal();
-        };
-        
+
+        // Click en el día para crear cita (Solo si no es médico)
+        const role = localStorage.getItem('userRole');
+        if (role !== 'Medico' && role !== 'Médico') {
+            dayDiv.onclick = () => {
+                const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                const dateString = selectedDate.toISOString().split('T')[0];
+                document.getElementById('fecha').value = dateString;
+                openModal();
+            };
+            dayDiv.style.cursor = 'pointer';
+        } else {
+            dayDiv.style.cursor = 'default';
+        }
+
         calendar.appendChild(dayDiv);
     }
 }
@@ -267,11 +292,11 @@ function nextMonth() {
 // Cambiar vista
 function toggleView() {
     viewMode = viewMode === 'calendar' ? 'list' : 'calendar';
-    
+
     const calendarView = document.getElementById('calendarView');
     const listView = document.getElementById('listView');
     const toggleText = document.getElementById('viewToggleText');
-    
+
     if (viewMode === 'calendar') {
         calendarView.style.display = 'block';
         listView.style.display = 'none';
@@ -287,9 +312,10 @@ function toggleView() {
 
 // Renderizar lista de citas
 function renderAppointmentsList(appointments) {
+    const userRole = localStorage.getItem('userRole');
     const tbody = document.getElementById('appointmentsBody');
     tbody.innerHTML = '';
-    
+
     if (appointments.length === 0) {
         tbody.innerHTML = `
             <tr><td colspan="8" style="text-align:center; padding:40px;">
@@ -298,18 +324,38 @@ function renderAppointmentsList(appointments) {
         `;
         return;
     }
-    
+
     appointments.forEach(apt => {
         const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
             ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`
             : 'N/A';
-        
+
         const medicoNombre = apt.medico && apt.medico.nombrePersona && apt.medico.apellidoPersona
             ? `${apt.medico.nombrePersona} ${apt.medico.apellidoPersona}`
             : 'N/A';
-        
+
+        // Botones de acción según rol y estado
+        let acciones = `
+            <button class="btn-icon" onclick="showAppointmentDetails(${apt.idcita})" title="Ver Detalles">👁️</button>
+        `;
+
+        // Si es médico y la cita está pendiente, mostrar botón Diagnosticar
+        if ((userRole === 'Medico' || userRole === 'Médico') && apt.estado === 'Pendiente') {
+            acciones += `
+                <button class="btn-icon" onclick="openDiagnosisModal(${apt.idcita})" title="Diagnosticar y Prescribir" style="background-color: #e3f2fd; color: #1976d2; font-size: 1.1em; width: auto; padding: 0 8px;">🩺+💊</button>
+            `;
+        }
+
+        // Si NO es médico, mostrar opciones de edición/cancelación si está pendiente
+        if (userRole !== 'Medico' && userRole !== 'Médico' && apt.estado === 'Pendiente') {
+            acciones += `
+                <button class="btn-icon" onclick="editAppointment(${apt.idcita})" title="Editar">✏️</button>
+                <button class="btn-icon" onclick="deleteAppointment(${apt.idcita})" title="Eliminar/Cancelar">🗑️</button>
+            `;
+        }
+
         const row = `
-            <tr onclick="showAppointmentDetails(${apt.idcita})" style="cursor:pointer;">
+            <tr style="cursor:pointer;">
                 <td>${apt.idcita}</td>
                 <td>${new Date(apt.fecha).toLocaleDateString('es-ES')}</td>
                 <td>${apt.hora.substring(0, 5)}</td>
@@ -317,31 +363,30 @@ function renderAppointmentsList(appointments) {
                 <td>Dr(a). ${medicoNombre}</td>
                 <td>${apt.tiposervicio}</td>
                 <td><span class="status-badge ${apt.estado.toLowerCase()}">${apt.estado}</span></td>
-                <td onclick="event.stopPropagation();">
-                    <button class="btn-icon" onclick="editAppointment(${apt.idcita})" title="Editar">✏️</button>
-                    <button class="btn-icon" onclick="deleteAppointment(${apt.idcita})" title="Eliminar">🗑️</button>
-                </td>
+                <td onclick="event.stopPropagation();">${acciones}</td>
             </tr>
         `;
         tbody.innerHTML += row;
     });
+
+    // Ya no ocultamos la columna acciones para médicos, porque ahora tiene el botón diagnosticar
 }
 
 // Mostrar detalles de cita
 async function showAppointmentDetails(idCita) {
     try {
         const response = await fetch(`${API_URL}/citas/${idCita}`);
-        
+
         const apt = await response.json();
-        
+
         const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
             ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`
             : 'N/A';
-        
+
         const medicoNombre = apt.medico && apt.medico.nombrePersona && apt.medico.apellidoPersona
             ? `${apt.medico.nombrePersona} ${apt.medico.apellidoPersona}`
             : 'N/A';
-        
+
         document.getElementById('appointmentDetails').innerHTML = `
             <div class="detail-row">
                 <strong>ID Cita:</strong> <span>${apt.idcita}</span>
@@ -365,9 +410,25 @@ async function showAppointmentDetails(idCita) {
                 <strong>Estado:</strong> <span class="status-badge ${apt.estado.toLowerCase()}">${apt.estado}</span>
             </div>
         `;
-        
+
         currentAppointment = apt;
         document.getElementById('detailsModal').style.display = 'block';
+
+        // Ocultar botones de acción si es médico
+        const role = localStorage.getItem('userRole');
+        if (role === 'Medico' || role === 'Médico') {
+            const btnEdit = document.querySelector('#detailsModal .btn-primary');
+            const btnCancel = document.querySelector('#detailsModal .btn-warning');
+            if (btnEdit) btnEdit.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+        } else {
+            // Asegurar que estén visibles para otros roles
+            const btnEdit = document.querySelector('#detailsModal .btn-primary');
+            const btnCancel = document.querySelector('#detailsModal .btn-warning');
+            if (btnEdit) btnEdit.style.display = 'inline-block';
+            if (btnCancel) btnCancel.style.display = 'inline-block';
+        }
+
     } catch (error) {
         showNotification('Error al cargar detalles', 'error');
     }
@@ -378,13 +439,17 @@ function openModal(appointment = null) {
     const modal = document.getElementById('appointmentModal');
     const form = document.getElementById('appointmentForm');
     const title = document.getElementById('modalTitle');
-    
+
     if (appointment) {
         title.textContent = 'Editar Cita';
         currentAppointment = appointment;
-        
-        document.getElementById('codPaciente').value = appointment.codpaciente;
-        document.getElementById('medico').value = appointment.numdocumentoemp;
+
+        // Mapeo seguro de datos anidados
+        const codPaciente = appointment.paciente ? appointment.paciente.codPaciente : '';
+        const idMedico = appointment.medico ? appointment.medico.idempleado : '';
+
+        document.getElementById('codPaciente').value = codPaciente;
+        document.getElementById('medico').value = idMedico;
         document.getElementById('fecha').value = appointment.fecha;
         document.getElementById('hora').value = appointment.hora;
         document.getElementById('tipoServicio').value = appointment.tiposervicio;
@@ -394,9 +459,201 @@ function openModal(appointment = null) {
         currentAppointment = null;
         form.reset();
     }
-    
+
     modal.style.display = 'block';
 }
+
+// --- LÓGICA DE DIAGNÓSTICO (SOLO MÉDICOS) ---
+
+let currentPrescriptions = [];
+
+function addPrescriptionRow() {
+    const select = document.getElementById('prescMedicina');
+    const dosis = document.getElementById('prescDosis').value;
+    const frecuencia = document.getElementById('prescFrecuencia').value;
+    const duracion = document.getElementById('prescDuracion').value;
+
+    if (!select.value || !dosis || !frecuencia || !duracion) {
+        alert('Por favor complete todos los campos de la prescripción');
+        return;
+    }
+
+    const codMed = parseInt(select.value);
+
+    // Verificar Duplicados
+    const exists = currentPrescriptions.some(p => p.codMed === codMed);
+    if (exists) {
+        alert('Este medicamento ya está en la lista. Elimínelo si desea agregarlo de nuevo.');
+        return;
+    }
+
+    const presc = {
+        codMed: codMed,
+        nombreMed: select.options[select.selectedIndex].text,
+        dosis: dosis,
+        frecuencia: frecuencia,
+        duracion: duracion
+    };
+
+    currentPrescriptions.push(presc);
+    renderPrescriptionsTable();
+
+    // Limpiar inputs de prescripción
+    select.value = "";
+    document.getElementById('prescDosis').value = "";
+    document.getElementById('prescFrecuencia').value = "";
+    document.getElementById('prescDuracion').value = "";
+}
+
+function removePrescriptionRow(index) {
+    currentPrescriptions.splice(index, 1);
+    renderPrescriptionsTable();
+}
+
+function renderPrescriptionsTable() {
+    const tbody = document.getElementById('prescriptionsBody');
+    tbody.innerHTML = '';
+
+    currentPrescriptions.forEach((p, index) => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${p.nombreMed}</td>
+                <td>${p.dosis}</td>
+                <td>${p.frecuencia}</td>
+                <td>${p.duracion}</td>
+                <td>
+                    <button type="button" class="btn-icon" onclick="removePrescriptionRow(${index})" style="color:red;">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+async function openDiagnosisModal(idCita) {
+    document.getElementById('diagnosisCitaId').value = idCita;
+
+    // Limpiar formulario y tabla
+    document.getElementById('diagnosisForm').reset();
+    currentPrescriptions = [];
+    renderPrescriptionsTable();
+
+    const token = localStorage.getItem('token');
+
+    // Cargar enfermedades si no están cargadas
+    const select = document.getElementById('diagnosisEnfermedad');
+    if (select.options.length <= 1) {
+        try {
+            const response = await fetch(`${API_URL}/enfermedades`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const enfermedades = await response.json();
+
+            select.innerHTML = '<option value="">Seleccione una enfermedad</option>';
+            enfermedades.forEach(e => {
+                select.innerHTML += `<option value="${e.idEnfermedad}">${e.nombreEnfermedad}</option>`;
+            });
+        } catch (error) {
+            console.error('Error cargando enfermedades:', error);
+            alert('Error al cargar lista de enfermedades');
+        }
+    }
+
+    // Cargar medicamentos
+    const selectMedicina = document.getElementById('prescMedicina');
+    try {
+        const response = await fetch(`${API_URL}/medicamentos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const medicamentos = await response.json();
+
+        selectMedicina.innerHTML = '<option value="">Seleccione...</option>';
+        medicamentos.forEach(m => {
+            selectMedicina.innerHTML += `<option value="${m.codMed}">${m.nombreMed} - ${m.descripcion}</option>`;
+        });
+    } catch (error) {
+        console.error('Error cargando medicamentos:', error);
+    }
+
+    document.getElementById('diagnosisModal').style.display = 'block';
+}
+
+function closeDiagnosisModal() {
+    document.getElementById('diagnosisModal').style.display = 'none';
+    document.getElementById('diagnosisForm').reset();
+    currentPrescriptions = [];
+}
+
+async function saveDiagnosis(event) {
+    event.preventDefault();
+
+    const idCita = document.getElementById('diagnosisCitaId').value;
+    const idEnfermedad = document.getElementById('diagnosisEnfermedad').value;
+
+    if (!idEnfermedad) {
+        alert('Debe seleccionar una enfermedad');
+        return;
+    }
+
+    try {
+        // 1. Guardar Diagnóstico
+        const responseDiag = await fetch(`${API_URL}/citas/${idCita}/diagnostico`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                idEnfermedad: idEnfermedad
+            })
+        });
+
+        const dataDiag = await responseDiag.json();
+
+        if (!dataDiag.success) {
+            throw new Error(dataDiag.message || 'Error al guardar diagnóstico');
+        }
+
+        // 2. Guardar Prescripciones (si hay)
+        if (currentPrescriptions.length > 0) {
+            for (const presc of currentPrescriptions) {
+                const responsePresc = await fetch(`${API_URL}/citas/${idCita}/prescripcion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        codMed: presc.codMed,
+                        dosis: presc.dosis,
+                        frecuencia: presc.frecuencia,
+                        duracion: presc.duracion
+                    })
+                });
+
+                if (!responsePresc.ok) {
+                    const text = await responsePresc.text();
+                    console.error('Error detallado del servidor:', text);
+                    throw new Error(`Error ${responsePresc.status} guardando prescripción: ${text}`);
+                }
+
+                const dataPresc = await responsePresc.json();
+                if (!dataPresc.success) {
+                    console.error('Error guardando prescripción:', presc, dataPresc.message);
+                }
+            }
+        }
+
+        alert('Diagnóstico y prescripciones registrados correctamente');
+        closeDiagnosisModal();
+        loadAppointments();
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+// ---------------------------------------------------------
 
 // Cerrar modales
 function closeModal() {
@@ -420,27 +677,29 @@ async function saveAppointment(event) {
     event.preventDefault();
 
     const esNuevo = !currentAppointment; // Determinar si es INSERT o UPDATE
-    
+
     const patientSelect = document.getElementById('codPaciente');
     const doctorSelect = document.getElementById('medico');
-    
+
     const data = {
         codpaciente: parseInt(patientSelect.value),
         numdocumento: parseInt(patientSelect.selectedOptions[0].dataset.documento),
         idempleado: parseInt(doctorSelect.value),
         numdocumentoempleado: parseInt(doctorSelect.selectedOptions[0].dataset.documento),
         fecha: document.getElementById('fecha').value,
-        hora: document.getElementById('hora').value + ':00',
+        hora: (document.getElementById('hora').value.split(':').length === 2)
+            ? document.getElementById('hora').value + ':00'
+            : document.getElementById('hora').value,
         tiposervicio: document.getElementById('tipoServicio').value,
         estado: document.getElementById('estado').value
     };
-    
+
     try {
-        const url = currentAppointment 
+        const url = currentAppointment
             ? `${API_URL}/citas/${currentAppointment.idcita}`
             : `${API_URL}/citas`;
         const method = currentAppointment ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -448,7 +707,7 @@ async function saveAppointment(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Error al guardar');
@@ -456,7 +715,7 @@ async function saveAppointment(event) {
 
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'citas');
-        
+
         showNotification('Cita guardada correctamente', 'success');
         closeModal();
         loadAppointments();
@@ -480,12 +739,12 @@ async function editAppointment(idCita) {
 // Eliminar cita
 async function deleteAppointment(idCita) {
     if (!confirm('¿Eliminar esta cita?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/citas/${idCita}`, {
             method: 'DELETE'
         });
-        
+
         if (!response.ok) throw new Error('Error');
 
         await registrarAuditoria('DELETE', 'citas');
@@ -500,7 +759,7 @@ async function deleteAppointment(idCita) {
 // Cancelar cita
 async function cancelAppointment() {
     if (!confirm('¿Cancelar esta cita?')) return;
-    
+
     try {
         await fetch(`${API_URL}/citas/${currentAppointment.idcita}`, {
             method: 'PUT',
@@ -509,10 +768,10 @@ async function cancelAppointment() {
             },
             body: JSON.stringify({ ...currentAppointment, estado: 'Cancelada' })
         });
-        
+
 
         await registrarAuditoria('UPDATE', 'citas');
-        
+
         showNotification('Cita cancelada', 'success');
         closeDetailsModal();
         loadAppointments();
@@ -527,24 +786,24 @@ function filterAppointments() {
     const estado = document.getElementById('filterEstado').value;
     const fecha = document.getElementById('filterFecha').value;
     const medico = document.getElementById('filterMedico').value;
-    
+
     const filtered = allAppointments.filter(apt => {
-        const pacienteNombre = apt.paciente && apt.paciente.nombrepersona && apt.paciente.apellidopersona
-            ? `${apt.paciente.nombrepersona} ${apt.paciente.apellidopersona}`.toLowerCase()
+        const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
+            ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`.toLowerCase()
             : '';
-        
+
         const medicoNombre = apt.medico && apt.medico.nombrepersona && apt.medico.apellidopersona
             ? `${apt.medico.nombrepersona} ${apt.medico.apellidopersona}`.toLowerCase()
             : '';
-        
+
         const matchSearch = pacienteNombre.includes(search) || medicoNombre.includes(search);
         const matchEstado = !estado || apt.estado === estado;
         const matchFecha = !fecha || apt.fecha === fecha;
         const matchMedico = !medico || (apt.medico && apt.medico.idempleado == medico);
-        
+
         return matchSearch && matchEstado && matchFecha && matchMedico;
     });
-    
+
     renderAppointmentsList(filtered);
 }
 

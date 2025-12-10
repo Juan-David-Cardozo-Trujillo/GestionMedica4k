@@ -17,6 +17,11 @@ public interface EmpleadoMantieneEquipamientoRepository extends JpaRepository<Em
      */
     @Query("SELECT e FROM EmpleadoMantieneEquipamiento e WHERE e.codEquip = :codEquip")
     List<EmpleadoMantieneEquipamiento> findByCodEquip(@Param("codEquip") Integer codEquip);
+
+    /**
+     * Obtener asignaciones por ID de empleado
+     */
+    List<EmpleadoMantieneEquipamiento> findByIdEmpleado(Integer idEmpleado);
     
     /**
      * Verificar si un empleado ya está asignado a un equipamiento

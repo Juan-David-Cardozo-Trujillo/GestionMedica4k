@@ -3,8 +3,20 @@ let currentDisease = null;
 let allDiseases = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+    checkPermissions();
     loadDiseases();
 });
+
+function checkPermissions() {
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'Medico') {
+        const btn = document.querySelector('button[onclick="openModal()"]');
+        if (btn) btn.style.display = 'none';
+
+        // Ocultar columna de acciones en la tabla
+        // Esto requiere cambiar cómo se renderiza la tabla también
+    }
+}
 
 async function loadDiseases() {
     try {
@@ -22,8 +34,21 @@ async function loadDiseases() {
 function renderDiseases(diseases) {
     const tbody = document.getElementById('diseasesBody');
     tbody.innerHTML = '';
-    
+
+    const userRole = localStorage.getItem('userRole');
+
     diseases.forEach(disease => {
+        let acciones = '';
+        if (userRole !== 'Medico') {
+            acciones = `
+                <button class="btn-icon" onclick='editDisease(${JSON.stringify(disease)})'>✏️</button>
+                <button class="btn-icon" onclick="deleteDisease(${disease.idEnfermedad})">🗑️</button>
+            `;
+        } else {
+            // Medico solo ve, no edita
+            acciones = `<span style="color: #999; font-size: 0.8em;">(Solo lectura)</span>`;
+        }
+
         // CORRECCIÓN: Usar camelCase (idEnfermedad, nombreEnfermedad...)
         // Java convierte automáticamente los atributos de la clase a JSON respetando mayúsculas/minúsculas
         tbody.innerHTML += `
@@ -31,10 +56,7 @@ function renderDiseases(diseases) {
                 <td>${disease.idEnfermedad}</td>
                 <td>${disease.nombreEnfermedad}</td>
                 <td>${disease.descripcionEnfermedad}</td>
-                <td>
-                    <button class="btn-icon" onclick='editDisease(${JSON.stringify(disease)})'>✏️</button>
-                    <button class="btn-icon" onclick="deleteDisease(${disease.idEnfermedad})">🗑️</button>
-                </td>
+                <td>${acciones}</td>
             </tr>
         `;
     });
@@ -43,7 +65,7 @@ function renderDiseases(diseases) {
 function openModal(disease = null) {
     const modal = document.getElementById('diseaseModal');
     const form = document.getElementById('diseaseForm');
-    
+
     if (disease) {
         currentDisease = disease;
         document.getElementById('modalTitle').textContent = 'Editar Enfermedad';
@@ -55,7 +77,7 @@ function openModal(disease = null) {
         document.getElementById('modalTitle').textContent = 'Nueva Enfermedad';
         form.reset();
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -67,21 +89,21 @@ async function saveDisease(event) {
     event.preventDefault();
 
     const esNuevo = !currentDisease; // Determinar si es INSERT o UPDATE
-    
+
     const data = {
         // Estos nombres deben coincidir con los atributos en Enfermedad.java
         nombreEnfermedad: document.getElementById('nombreEnfermedad').value,
         descripcionEnfermedad: document.getElementById('descripcionEnfermedad').value
     };
-    
+
     try {
         // CORRECCIÓN: Usamos idEnfermedad (camelCase)
-        const url = currentDisease 
+        const url = currentDisease
             ? `${API_URL}/enfermedades/${currentDisease.idEnfermedad}`
             : `${API_URL}/enfermedades`;
-        
+
         const method = currentDisease ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -90,9 +112,9 @@ async function saveDisease(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) throw new Error('Error');
-        
+
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'enfermedades');
 
@@ -111,13 +133,13 @@ function editDisease(disease) {
 
 async function deleteDisease(id) {
     if (!confirm('¿Eliminar esta enfermedad?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/enfermedades/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) throw new Error('Error');
 
         await registrarAuditoria('DELETE', 'enfermedades');
@@ -131,7 +153,7 @@ async function deleteDisease(id) {
 
 function filterDiseases() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = allDiseases.filter(d => 
+    const filtered = allDiseases.filter(d =>
         // CORRECCIÓN: camelCase para el filtrado
         d.nombreEnfermedad.toLowerCase().includes(search) ||
         d.descripcionEnfermedad.toLowerCase().includes(search)

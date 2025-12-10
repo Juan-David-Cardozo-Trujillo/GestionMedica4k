@@ -31,6 +31,10 @@ public class EmpleadoService {
         return empleadoRepository.findById(id).orElse(null);
     }
 
+    public Empleado findByNumDocumento(Integer numDocumento) {
+        return empleadoRepository.findByNumDocumento(numDocumento).orElse(null);
+    }
+
     // Método para guardar Persona + Empleado recibiendo datos sueltos
     public Empleado registrarEmpleadoSinDTO(Persona persona, String cargo, String nomDepto, Integer idSede) {
 

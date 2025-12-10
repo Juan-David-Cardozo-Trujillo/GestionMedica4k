@@ -64,6 +64,9 @@ public class UsuarioController {
     @Autowired
     private EmpleadoService empleadoService;
 
+    @Autowired
+    private com.gestion_medica.demo.service.HistoriaClinicaService historiaClinicaService;
+
     /**
      * Obtener todos los usuarios
      */
@@ -149,10 +152,27 @@ public class UsuarioController {
                 paciente.setDirPaciente(direccion);
                 paciente.setPersona(persona);
                 
-                pacienteService.save(paciente);
+                Paciente savedPaciente = pacienteService.save(paciente);
                 
-                response.put("paciente", paciente);
+                response.put("paciente", savedPaciente);
                 response.put("mensaje", "Usuario paciente creado exitosamente. Ya puede iniciar sesión.");
+
+                // Crear automáticamente Historia Clínica
+                try {
+                    com.gestion_medica.demo.model.HistoriaClinica historia = new com.gestion_medica.demo.model.HistoriaClinica();
+                    // Usar el ID generado del paciente guardado
+                    // historia.setCodPaciente(savedPaciente.getCodPaciente()); // Campo eliminado
+                    // historia.setNumDocumento(savedPaciente.getNumDocumento()); // Campo eliminado
+                    historia.setPaciente(savedPaciente); // La relación es suficiente ahora
+                    
+                    historiaClinicaService.save(historia);
+                    System.out.println("Historia Clínica creada automáticamente para el paciente: " + savedPaciente.getCodPaciente());
+                    response.put("historiaClinicaCreada", true);
+                } catch (Exception hce) {
+                    hce.printStackTrace(); // Imprimir stack trace completo
+                    System.err.println("Error al crear Historia Clínica automática: " + hce.getMessage());
+                    response.put("historiaClinicaError", "No se pudo crear la historia clínica: " + hce.getMessage());
+                }
             }
 
             // Si el rol es Medico, crear automáticamente el registro en la tabla empleados
@@ -196,6 +216,53 @@ public class UsuarioController {
                 } catch (Exception ex) {
                     // No romper la creación de usuario si falla la creación de empleado
                     System.err.println("=== ERROR AL CREAR EMPLEADO ===");
+                    ex.printStackTrace();
+                    response.put("empleadoError", "No se pudo crear el empleado vinculado: " + ex.getMessage());
+                    response.put("empleadoErrorDetalle", ex.getClass().getName());
+                }
+            }
+
+            // Si el rol es Tecnico, crear automáticamente el registro en la tabla empleados
+            if ("Tecnico".equalsIgnoreCase(rol) || "Técnico".equalsIgnoreCase(rol) || "TecnicoMantenimiento".equalsIgnoreCase(rol)) {
+                // Recibir datos del departamento desde el frontend
+                String cargo = "Tecnico";
+                String nombreDepartamento = null;
+                Integer idSede = null;
+
+                // Intentar obtener departamento e idSede del request
+                if (data.containsKey("nombreDepartamento")) {
+                    nombreDepartamento = data.get("nombreDepartamento").toString();
+                }
+                if (data.containsKey("idSede")) {
+                    try {
+                        idSede = Integer.valueOf(data.get("idSede").toString());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Error convirtiendo idSede: " + e.getMessage());
+                    }
+                }
+
+                try {
+                    System.out.println("=== INTENTANDO CREAR EMPLEADO TECNICO ===");
+                    System.out.println("Persona numDocumento: " + persona.getNumDocumento());
+                    System.out.println("Cargo: " + cargo);
+                    System.out.println("Departamento: " + nombreDepartamento);
+                    System.out.println("IdSede: " + idSede);
+
+                    // Registrar Persona ya creada + Empleado con departamento
+                    com.gestion_medica.demo.model.Empleado empleadoCreado = empleadoService
+                        .registrarEmpleadoSinDTO(persona, cargo, nombreDepartamento, idSede);
+
+                    System.out.println("=== EMPLEADO TECNICO CREADO EXITOSAMENTE ===");
+                    System.out.println("IdEmpleado: " + empleadoCreado.getIdEmpleado());
+
+                    response.put("empleado", empleadoCreado);
+                    // Mensaje complementario
+                    if (response.get("mensaje") == null) {
+                        response.put("mensaje", "Usuario técnico creado exitosamente y vinculado como empleado.");
+                    }
+                } catch (Exception ex) {
+                    // No romper la creación de usuario si falla la creación de empleado
+                    System.err.println("=== ERROR AL CREAR EMPLEADO TECNICO ===");
                     ex.printStackTrace();
                     response.put("empleadoError", "No se pudo crear el empleado vinculado: " + ex.getMessage());
                     response.put("empleadoErrorDetalle", ex.getClass().getName());

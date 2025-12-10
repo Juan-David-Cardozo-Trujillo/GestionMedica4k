@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CitaDiagnosticaEnfermedadRepository extends JpaRepository<CitaDiagnosticaEnfermedad, CitaDiagnosticaEnfermedadId> {
+    java.util.List<CitaDiagnosticaEnfermedad> findByCitaPacienteCodPaciente(Integer codPaciente);
 }

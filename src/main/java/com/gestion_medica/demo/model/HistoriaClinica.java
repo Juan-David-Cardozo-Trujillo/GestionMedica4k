@@ -32,23 +32,14 @@ public class HistoriaClinica {
     @Column(name = "codhistoria")
     private Integer codHistoria;
 
-    @Column(name = "codpaciente")
-    private Integer codPaciente;
-
-    @Column(name = "numdocumento")
-    private Integer numDocumento;
-
     // Relación con Paciente usando llave compuesta
     @ManyToOne
     @JoinColumns({
-        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente", insertable = false, updatable = false),
-        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento", insertable = false, updatable = false)
+        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente"),
+        @JoinColumn(name = "numdocumento", referencedColumnName = "numdocumento")
     })
     @JsonIgnore
     private Paciente paciente;
 
-    // Relación con diagnósticos registrados
-    @OneToMany(mappedBy = "historiaClinica", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<HistoriaClinicaRegistraDiagnostica> registroDiagnostica;
+    
 }

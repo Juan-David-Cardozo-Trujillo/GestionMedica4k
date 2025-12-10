@@ -14,4 +14,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, EmpleadoId> 
     
     // Buscar empleado por idEmpleado únicamente
     Optional<Empleado> findByIdEmpleado(Integer idEmpleado);
+
+    // Buscar empleado por número de documento (Relación con Persona/Usuario)
+    Optional<Empleado> findByNumDocumento(Integer numDocumento);
 }

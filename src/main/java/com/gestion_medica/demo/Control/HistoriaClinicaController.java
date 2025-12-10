@@ -1,7 +1,5 @@
 package com.gestion_medica.demo.control;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,10 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gestion_medica.demo.model.HistoriaClinica;
-import com.gestion_medica.demo.model.HistoriaClinicaRegistraDiagnostica;
 import com.gestion_medica.demo.model.Paciente;
-import com.gestion_medica.demo.model.keys.HistoriaClinicaRegistraDiagnosticaId;
-import com.gestion_medica.demo.repository.HistoriaClinicaRegistraDiagnosticaRepository;
 import com.gestion_medica.demo.repository.HistoriaClinicaRepository;
 import com.gestion_medica.demo.repository.PacienteRepository;
 
@@ -37,7 +32,10 @@ public class HistoriaClinicaController {
     private PacienteRepository pacienteRepository;
 
     @Autowired
-    private HistoriaClinicaRegistraDiagnosticaRepository registraDiagnosticaRepository;
+    private com.gestion_medica.demo.repository.CitaDiagnosticaEnfermedadRepository citaDiagnosticaRepository;
+
+    @Autowired
+    private com.gestion_medica.demo.repository.CitaPrescribeMedicamentoRepository prescribeMedicamentoRepository;
 
     /**
      * GET - Listar todas las historias clínicas
@@ -50,11 +48,12 @@ public class HistoriaClinicaController {
         for (HistoriaClinica historia : historias) {
             Map<String, Object> map = new HashMap<>();
             map.put("codHistoria", historia.getCodHistoria());
-            map.put("codPaciente", historia.getCodPaciente());
-            map.put("numDocumento", historia.getNumDocumento());
 
             // Datos del paciente
             if (historia.getPaciente() != null) {
+                map.put("codPaciente", historia.getPaciente().getCodPaciente());
+                map.put("numDocumento", historia.getPaciente().getNumDocumento());
+
                 Map<String, Object> pacienteMap = new HashMap<>();
                 pacienteMap.put("codPaciente", historia.getPaciente().getCodPaciente());
                 
@@ -92,15 +91,19 @@ public class HistoriaClinicaController {
 
         // Datos básicos de la historia
         response.put("codHistoria", historia.getCodHistoria());
-        response.put("codPaciente", historia.getCodPaciente());
-        response.put("numDocumento", historia.getNumDocumento());
+
+        Integer codPaciente = null;
 
         // Datos del paciente
         if (historia.getPaciente() != null) {
             Map<String, Object> pacienteMap = new HashMap<>();
             Paciente paciente = historia.getPaciente();
+            codPaciente = paciente.getCodPaciente();
+            
             pacienteMap.put("codPaciente", paciente.getCodPaciente());
             pacienteMap.put("dirPaciente", paciente.getDirPaciente());
+            response.put("codPaciente", paciente.getCodPaciente());
+            response.put("numDocumento", paciente.getNumDocumento());
             
             if (paciente.getPersona() != null) {
                 pacienteMap.put("nombrePersona", paciente.getPersona().getNombrePersona());
@@ -112,29 +115,58 @@ public class HistoriaClinicaController {
             response.put("paciente", pacienteMap);
         }
 
-        // Diagnósticos registrados
+        // Diagnósticos registrados (NUEVO: Buscar por paciente a través de Citas)
         List<Map<String, Object>> diagnosticos = new ArrayList<>();
-        if (historia.getRegistroDiagnostica() != null) {
-            for (HistoriaClinicaRegistraDiagnostica registro : historia.getRegistroDiagnostica()) {
+        if (codPaciente != null) {
+            List<com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad> registrosDiag = 
+                citaDiagnosticaRepository.findByCitaPacienteCodPaciente(codPaciente);
+            
+            for (com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad registro : registrosDiag) {
                 Map<String, Object> diagMap = new HashMap<>();
-                diagMap.put("codHistoria", registro.getCodHistoria());
+                // diagMap.put("codHistoria", codHistoria); // Ya no aplica directamente
                 diagMap.put("idEnfermedad", registro.getIdEnfermedad());
                 diagMap.put("idCita", registro.getIdCita());
-                diagMap.put("fechaRegistro", registro.getFechaRegistro());
-                diagMap.put("horaRegistro", registro.getHoraRegistro());
+                // Fecha de la cita como fecha de diagnóstico
+                if (registro.getCita() != null) {
+                    diagMap.put("fechaRegistro", registro.getCita().getFecha());
+                    diagMap.put("horaRegistro", registro.getCita().getHora());
+                }
                 
                 if (registro.getEnfermedad() != null) {
                     diagMap.put("nombreEnfermedad", registro.getEnfermedad().getNombreEnfermedad());
                 }
                 
-                if (registro.getCita() != null) {
-                    diagMap.put("idCita", registro.getCita().getIdCita());
-                }
-                
                 diagnosticos.add(diagMap);
             }
         }
+        
         response.put("diagnosticos", diagnosticos);
+
+        // Medicamentos prescritos (NUEVO: Buscar por paciente a través de Citas)
+        List<Map<String, Object>> medicamentos = new ArrayList<>();
+        if (codPaciente != null) {
+            List<com.gestion_medica.demo.model.CitaPrescribeMedicamento> registrosMed = 
+                prescribeMedicamentoRepository.findByCitaPacienteCodPaciente(codPaciente);
+            
+            for (com.gestion_medica.demo.model.CitaPrescribeMedicamento reg : registrosMed) {
+                Map<String, Object> medMap = new HashMap<>();
+                medMap.put("idCita", reg.getIdCita());
+                medMap.put("codMed", reg.getCodMed());
+                medMap.put("dosis", reg.getDosis());
+                medMap.put("frecuencia", reg.getFrecuencia());
+                medMap.put("duracion", reg.getDuracion());
+    
+                if (reg.getMedicamento() != null) {
+                    medMap.put("nombreMedicamento", reg.getMedicamento().getNombreMed());
+                    medMap.put("descripcionMedicamento", reg.getMedicamento().getDescripcion());
+                }
+                if (reg.getCita() != null) {
+                    medMap.put("fechaCita", reg.getCita().getFecha());
+                }
+                medicamentos.add(medMap);
+            }
+        }
+        response.put("medicamentos", medicamentos);
 
         return ResponseEntity.ok(response);
     }
@@ -162,8 +194,8 @@ public class HistoriaClinicaController {
 
             // Crear nueva historia clínica
             HistoriaClinica historia = new HistoriaClinica();
-            historia.setCodPaciente(codPaciente);
-            historia.setNumDocumento(numDocumento);
+            // historia.setCodPaciente(codPaciente); // Eliminado
+            // historia.setNumDocumento(numDocumento); // Eliminado
             historia.setPaciente(pacienteEncontrado);
 
             HistoriaClinica guardada = historiaRepository.save(historia);
@@ -171,8 +203,8 @@ public class HistoriaClinicaController {
             Map<String, Object> respuesta = new HashMap<>();
             respuesta.put("mensaje", "Historia clínica creada exitosamente");
             respuesta.put("codHistoria", guardada.getCodHistoria());
-            respuesta.put("codPaciente", guardada.getCodPaciente());
-            respuesta.put("numDocumento", guardada.getNumDocumento());
+            respuesta.put("codPaciente", guardada.getPaciente().getCodPaciente());
+            respuesta.put("numDocumento", guardada.getPaciente().getNumDocumento());
 
             return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
@@ -181,50 +213,7 @@ public class HistoriaClinicaController {
         }
     }
 
-    /**
-     * POST - Registrar un diagnóstico en la historia clínica
-     */
-    @PostMapping("/{codHistoria}/diagnosticos")
-    public ResponseEntity<?> registrarDiagnostico(
-            @PathVariable Integer codHistoria,
-            @RequestBody Map<String, Object> payload) {
-        try {
-            Integer idEnfermedad = Integer.valueOf(payload.get("idEnfermedad").toString());
-            Integer idCita = Integer.valueOf(payload.get("idCita").toString());
-            LocalDate fechaRegistro = LocalDate.parse(payload.get("fechaRegistro").toString());
-            LocalTime horaRegistro = LocalTime.parse(payload.get("horaRegistro").toString());
-
-            // Verificar que la historia clínica existe
-            Optional<HistoriaClinica> optHistoria = historiaRepository.findById(codHistoria);
-            if (!optHistoria.isPresent()) {
-                return ResponseEntity.badRequest().body("Historia clínica no encontrada");
-            }
-
-            // Crear el registro de diagnóstico
-            HistoriaClinicaRegistraDiagnostica registro = new HistoriaClinicaRegistraDiagnostica();
-            registro.setCodHistoria(codHistoria);
-            registro.setIdEnfermedad(idEnfermedad);
-            registro.setIdCita(idCita);
-            registro.setFechaRegistro(fechaRegistro);
-            registro.setHoraRegistro(horaRegistro);
-            registro.setHistoriaClinica(optHistoria.get());
-
-            HistoriaClinicaRegistraDiagnostica guardado = registraDiagnosticaRepository.save(registro);
-
-            Map<String, Object> respuesta = new HashMap<>();
-            respuesta.put("mensaje", "Diagnóstico registrado exitosamente");
-            respuesta.put("codHistoria", guardado.getCodHistoria());
-            respuesta.put("idEnfermedad", guardado.getIdEnfermedad());
-            respuesta.put("idCita", guardado.getIdCita());
-            respuesta.put("fechaRegistro", guardado.getFechaRegistro());
-            respuesta.put("horaRegistro", guardado.getHoraRegistro());
-
-            return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error al registrar diagnóstico: " + e.getMessage());
-        }
-    }
+    // Metodos obsoletos de registro/eliminacion de diagnostico eliminados ya que ahora se gestionan desde citas.
 
     /**
      * DELETE - Eliminar una historia clínica
@@ -240,29 +229,6 @@ public class HistoriaClinicaController {
             return ResponseEntity.ok("Historia clínica eliminada exitosamente");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al eliminar: " + e.getMessage());
-        }
-    }
-
-    /**
-     * DELETE - Eliminar un registro de diagnóstico
-     */
-    @DeleteMapping("/{codHistoria}/diagnosticos/{idEnfermedad}/{idCita}")
-    public ResponseEntity<?> eliminarDiagnostico(
-            @PathVariable Integer codHistoria,
-            @PathVariable Integer idEnfermedad,
-            @PathVariable Integer idCita) {
-        try {
-            HistoriaClinicaRegistraDiagnosticaId id = new HistoriaClinicaRegistraDiagnosticaId(
-                    codHistoria, idEnfermedad, idCita);
-
-            if (!registraDiagnosticaRepository.existsById(id)) {
-                return ResponseEntity.notFound().build();
-            }
-
-            registraDiagnosticaRepository.deleteById(id);
-            return ResponseEntity.ok("Diagnóstico eliminado exitosamente");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al eliminar diagnóstico: " + e.getMessage());
         }
     }
 }

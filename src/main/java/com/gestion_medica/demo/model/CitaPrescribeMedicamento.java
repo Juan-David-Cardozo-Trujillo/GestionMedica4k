@@ -30,10 +30,20 @@ public class CitaPrescribeMedicamento {
     @Column(name = "codmed")
     private Integer codMed;
 
-    // --- CAMBIO: BORRAR ESTE (Es una FK normal) ---
-    // Borrar: private Integer codHistoria;
-    // ... campos simples (dosis, frecuencia...) quedan igual ...
-    // ESTOS SE QUEDAN READ-ONLY (Porque ya tienes los Integers arriba como ID)
+    // Campos adicionales solicitados
+    @Column(name = "dosis", length = 50, nullable = false)
+    private String dosis;
+
+    @Column(name = "frecuencia", length = 50, nullable = false)
+    private String frecuencia;
+
+    @Column(name = "fechaemision", nullable = false)
+    private java.time.LocalDate fechaEmision;
+    
+    @Column(name = "duracion", length = 50, nullable = false)
+    private String duracion;
+
+    // Relaciones
     @ManyToOne
     @JoinColumn(name = "idcita", insertable = false, updatable = false)
     private Cita cita;
@@ -42,8 +52,7 @@ public class CitaPrescribeMedicamento {
     @JoinColumn(name = "codmed", insertable = false, updatable = false)
     private Medicamento medicamento;
 
-    // --- CORRECCIÓN: ESTE SE VUELVE EDITABLE (Reemplaza al Integer codHistoria) ---
     @ManyToOne
-    @JoinColumn(name = "codhistoria") // Sin insertable=false
+    @JoinColumn(name = "codhistoria", nullable = false)
     private HistoriaClinica historiaClinica;
 }

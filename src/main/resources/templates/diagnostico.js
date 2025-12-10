@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     loadMyCitas();
@@ -12,7 +12,7 @@ async function loadMyCitas() {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const citas = await response.json();
-        
+
         const select = document.getElementById('idCita');
         select.innerHTML = '<option value="">Seleccione una cita</option>';
         citas.filter(c => c.estado === 'Tomada').forEach(c => {
@@ -33,7 +33,7 @@ async function loadEnfermedades() {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const enfermedades = await response.json();
-        
+
         const select = document.getElementById('idEnfermedad');
         select.innerHTML = '<option value="">Seleccione una enfermedad</option>';
         enfermedades.forEach(e => {
@@ -48,12 +48,12 @@ async function loadEnfermedades() {
 
 async function saveDiagnostic(event) {
     event.preventDefault();
-    
+
     const data = {
         idCita: parseInt(document.getElementById('idCita').value),
         idEnfermedad: parseInt(document.getElementById('idEnfermedad').value)
     };
-    
+
     try {
         const response = await fetch(`${API_URL}/citas/${data.idCita}/diagnostico`, {
             method: 'POST',
@@ -63,7 +63,7 @@ async function saveDiagnostic(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) throw new Error('Error');
         alert('Diagnóstico registrado correctamente');
         document.getElementById('diagnosticForm').reset();

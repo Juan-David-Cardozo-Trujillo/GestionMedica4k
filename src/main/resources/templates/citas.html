@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -14,10 +14,10 @@
                 <button class="btn btn-secondary" onclick="toggleView()">
                     <span id="viewToggleText">📋 Ver Lista</span>
                 </button>
-                <button class="btn btn-primary" onclick="openModal()">
+                <button id="btnNuevaCita" class="btn btn-primary" onclick="openModal()">
                     ➕ Nueva Cita
                 </button>
-                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
+                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
                     ← Volver
                 </button>
             </div>
@@ -148,7 +148,83 @@
         </div>
     </div>
 
-    <!-- Modal para ver detalles -->
+    <!-- Modal para Diagnóstico (Solo Médicos) -->
+    <div id="diagnosisModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDiagnosisModal()">&times;</span>
+            <h2>🩺 Registrar Diagnóstico y Prescripción</h2>
+            <form id="diagnosisForm" onsubmit="saveDiagnosis(event)">
+                <input type="hidden" id="diagnosisCitaId">
+                
+                <!-- Sección Diagnóstico -->
+                <div class="section-title">Enfermedad</div>
+                <div class="form-group">
+                    <label>Enfermedad *</label>
+                    <select id="diagnosisEnfermedad" required>
+                        <option value="">Cargando enfermedades...</option>
+                    </select>
+                </div>
+
+                <!-- Sección Prescripción -->
+                <div class="section-title" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">Prescripción de Medicamentos</div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Medicamento</label>
+                        <select id="prescMedicina">
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dosis</label>
+                        <input type="text" id="prescDosis" placeholder="Ej: 500mg">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Frecuencia</label>
+                        <input type="text" id="prescFrecuencia" placeholder="Ej: Cada 8 horas">
+                    </div>
+                    <div class="form-group">
+                        <label>Duración</label>
+                        <input type="text" id="prescDuracion" placeholder="Ej: 7 días">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="addPrescriptionRow()">+ Agregar</button>
+                    </div>
+                </div>
+
+                <div class="table-container" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;">
+                    <table class="table" style="width: 100%; font-size: 0.9em;">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Dosis</th>
+                                <th>Frecuencia</th>
+                                <th>Duración</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prescriptionsBody">
+                            <!-- Filas agregadas dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-group">
+                    <label>Observaciones Generales</label>
+                    <textarea id="diagnosisObservaciones" rows="3" placeholder="Observaciones..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeDiagnosisModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Todo y Finalizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="detailsModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeDetailsModal()">&times;</span>

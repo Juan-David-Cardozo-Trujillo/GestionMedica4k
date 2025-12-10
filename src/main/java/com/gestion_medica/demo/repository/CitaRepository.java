@@ -23,4 +23,8 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
     // Buscar historial de citas del paciente (completadas o canceladas)
     @Query("SELECT c FROM Cita c WHERE c.paciente.codPaciente = :codPaciente AND c.estado IN ('Completada', 'Cancelada') ORDER BY c.fecha DESC, c.hora DESC")
     List<Cita> findHistorialCitasByPaciente(@Param("codPaciente") Integer codPaciente);
+
+    // Buscar citas por ID de empleado (Médico)
+    @Query("SELECT c FROM Cita c WHERE c.empleado.idEmpleado = :idEmpleado ORDER BY c.fecha DESC, c.hora DESC")
+    List<Cita> findByEmpleadoIdEmpleado(@Param("idEmpleado") Integer idEmpleado);
 }

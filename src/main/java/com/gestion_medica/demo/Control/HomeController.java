@@ -102,6 +102,9 @@ public class HomeController {
         return "auditoria";
     }
 
+    @Autowired
+    private com.gestion_medica.demo.service.EmpleadoService empleadoService;
+
     /**
      * Endpoint REST para login
      */
@@ -119,12 +122,25 @@ public class HomeController {
             Usuario usuario = usuarioOpt.get();
             response.put("success", true);
             response.put("mensaje", "Login exitoso");
-            response.put("usuario", Map.of(
-                    "idUsuario", usuario.getIdUsuario(),
-                    "nombreUsuario", usuario.getNombreUsuario(),
-                    "rol", usuario.getRol(),
-                    "numDocumento", usuario.getPersona().getNumDocumento()
-            ));
+            
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("idUsuario", usuario.getIdUsuario());
+            userData.put("nombreUsuario", usuario.getNombreUsuario());
+            userData.put("rol", usuario.getRol());
+            userData.put("numDocumento", usuario.getPersona().getNumDocumento());
+
+            // Si es médico o técnico, adjuntar idEmpleado
+            // Esto es crucial para que el frontend pueda filtrar datos (ej. equipamientos asignados)
+            if ("Medico".equalsIgnoreCase(usuario.getRol()) || "Médico".equalsIgnoreCase(usuario.getRol()) ||
+                "Tecnico".equalsIgnoreCase(usuario.getRol()) || "Técnico".equalsIgnoreCase(usuario.getRol()) ||
+                "TecnicoMantenimiento".equalsIgnoreCase(usuario.getRol())) {
+                com.gestion_medica.demo.model.Empleado emp = empleadoService.findByNumDocumento(usuario.getPersona().getNumDocumento());
+                if (emp != null) {
+                    userData.put("idEmpleado", emp.getIdEmpleado());
+                }
+            }
+
+            response.put("usuario", userData);
             return ResponseEntity.ok(response);
         } else {
             response.put("success", false);
