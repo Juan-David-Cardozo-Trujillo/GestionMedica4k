@@ -593,3 +593,73 @@ tbody tr:hover {
         gap: 10px;
     }
 }
+
+/* Estilos para dashboard médico */
+.cita-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.cita-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge.pendiente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge.tomada {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.badge.cancelada {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.calendar-header {
+    background: #667eea;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.calendar-day.has-appointments {
+    background: #e8f4f8;
+    border: 2px solid #667eea;
+}
+
+.appointment-count {
+    display: block;
+    font-size: 0.75rem;
+    color: #667eea;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.cita-preview {
+    font-size: 0.65rem;
+    color: #555;
+    padding: 2px 4px;
+    margin-top: 2px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

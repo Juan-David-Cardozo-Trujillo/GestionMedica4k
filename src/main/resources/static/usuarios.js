@@ -5,6 +5,12 @@ let allUsuarios = [];
 
 // Permisos por rol
 const rolesPermisos = {
+    Paciente: [
+        'Ver mis citas programadas',
+        'Ver historial de citas',
+        'Consultar mi historia clínica',
+        'Actualizar mis datos personales'
+    ],
     Administrador: [
         'Gestión completa de sedes hospitalarias',
         'Gestión de pacientes',
@@ -43,11 +49,15 @@ const rolesPermisos = {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadUsuarios();
+    loadDepartamentosYSedes(); // Cargar departamentos y sedes
     
     // Mostrar permisos al seleccionar rol
     const rolSelect = document.getElementById('rol');
     if (rolSelect) {
-        rolSelect.addEventListener('change', mostrarPermisos);
+        rolSelect.addEventListener('change', function() {
+            mostrarPermisos();
+            toggleDireccionField();
+        });
     }
 });
 
@@ -205,6 +215,107 @@ function mostrarPermisos() {
     permissionsInfo.style.display = 'block';
 }
 
+// ========== MOSTRAR/OCULTAR CAMPO DIRECCIÓN ==========
+function toggleDireccionField() {
+    const rol = document.getElementById('rol').value;
+    const direccionGroup = document.getElementById('direccionGroup');
+    const direccionInput = document.getElementById('direccion');
+    
+    if (!direccionGroup || !direccionInput) return;
+    
+    if (rol === 'Paciente') {
+        direccionGroup.style.display = 'block';
+        direccionInput.required = true;
+    } else {
+        direccionGroup.style.display = 'none';
+        direccionInput.required = false;
+        direccionInput.value = '';
+    }
+}
+
+// ========== MANEJAR CAMBIO DE ROL ==========
+function handleRoleChange() {
+    const rol = document.getElementById('rol').value;
+    const medicoFields = document.getElementById('medicoFields');
+    const direccionGroup = document.getElementById('direccionGroup');
+    const direccionInput = document.getElementById('direccion');
+    
+    // Mostrar/ocultar campos de médico
+    if (rol === 'Medico' || rol === 'Médico') {
+        medicoFields.style.display = 'block';
+        document.getElementById('departamento').required = true;
+        document.getElementById('sede').required = true;
+    } else {
+        medicoFields.style.display = 'none';
+        document.getElementById('departamento').required = false;
+        document.getElementById('sede').required = false;
+    }
+    
+    // Manejar campo dirección para pacientes
+    if (rol === 'Paciente') {
+        direccionGroup.style.display = 'block';
+        direccionInput.required = true;
+    } else {
+        direccionGroup.style.display = 'none';
+        direccionInput.required = false;
+        direccionInput.value = '';
+    }
+    
+    mostrarPermisos();
+}
+
+// ========== CARGAR DEPARTAMENTOS Y SEDES ==========
+async function loadDepartamentosYSedes() {
+    try {
+        // Cargar departamentos
+        const deptResponse = await fetch(`${API_URL}/api/departamentos`);
+        const departamentos = await deptResponse.json();
+        
+        const deptSelect = document.getElementById('departamento');
+        deptSelect.innerHTML = '<option value="">Seleccione un departamento</option>';
+        
+        // Agrupar departamentos por sede
+        const deptsPorSede = {};
+        departamentos.forEach(dept => {
+            const key = dept.idsede || dept.idSede;
+            if (!deptsPorSede[key]) deptsPorSede[key] = [];
+            deptsPorSede[key].push(dept);
+        });
+        
+        // Agregar opciones agrupadas
+        Object.keys(deptsPorSede).forEach(idSede => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = `Sede ${idSede}`;
+            deptsPorSede[idSede].forEach(dept => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify({
+                    nombre: dept.nombredepartamento || dept.nombreDepartamento,
+                    idSede: dept.idsede || dept.idSede
+                });
+                option.textContent = dept.nombredepartamento || dept.nombreDepartamento;
+                optgroup.appendChild(option);
+            });
+            deptSelect.appendChild(optgroup);
+        });
+        
+        // Cargar sedes
+        const sedesResponse = await fetch(`${API_URL}/api/sedes`);
+        const sedes = await sedesResponse.json();
+        
+        const sedeSelect = document.getElementById('sede');
+        sedeSelect.innerHTML = '<option value="">Seleccione una sede</option>';
+        sedes.forEach(sede => {
+            const option = document.createElement('option');
+            option.value = sede.idsede || sede.idSede;
+            option.textContent = sede.nombresede || sede.nombreSede;
+            sedeSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Error cargando departamentos/sedes:', error);
+    }
+}
+
 // ========== GUARDAR USUARIO ==========
 async function saveUsuario(event) {
     event.preventDefault();
@@ -235,6 +346,37 @@ async function saveUsuario(event) {
             rol: document.getElementById('rol').value
         }
     };
+    
+    // Si es paciente, agregar dirección
+    const rol = document.getElementById('rol').value;
+    if (rol === 'Paciente') {
+        const direccion = document.getElementById('direccion').value.trim();
+        if (!direccion) {
+            showNotification('La dirección es requerida para pacientes', 'error');
+            return;
+        }
+        data.direccion = direccion;
+    }
+    
+    // Si es médico, agregar datos de departamento
+    if (rol === 'Medico' || rol === 'Médico') {
+        const deptValue = document.getElementById('departamento').value;
+        const sedeValue = document.getElementById('sede').value;
+        
+        if (!deptValue || !sedeValue) {
+            showNotification('Debe seleccionar departamento y sede para médicos', 'error');
+            return;
+        }
+        
+        try {
+            const deptData = JSON.parse(deptValue);
+            data.nombreDepartamento = deptData.nombre;
+            data.idSede = parseInt(sedeValue);
+        } catch (e) {
+            showNotification('Error al procesar departamento', 'error');
+            return;
+        }
+    }
     
     // Solo incluir contraseña si se proporcionó
     if (contrasena) {

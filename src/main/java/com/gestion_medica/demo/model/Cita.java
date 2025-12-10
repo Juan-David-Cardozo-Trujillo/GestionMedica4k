@@ -1,5 +1,8 @@
 package com.gestion_medica.demo.model;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,7 +21,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// ... imports y annotations igual ...
 public class Cita {
 
     @Id
@@ -26,24 +28,29 @@ public class Cita {
     @Column(name = "idcita")
     private Integer idCita;
 
-    // ... campos simples (tipoServicio, estado, fecha, hora) se quedan igual ...
-    // --- CAMBIO AQUÍ: BORRAMOS LOS 4 CAMPOS INTEGER SUELTOS ---
-    // Borrar: private Integer numDocumentoEmp;
-    // Borrar: private Integer idEmpleado;
-    // Borrar: private Integer codPaciente;
-    // Borrar: private Integer numDocumentoPac;
-    // --- CORRECCIÓN: Quitamos el insertable=false para que estos objetos guarden los datos ---
+    @Column(name = "tiposervicio", length = 50)
+    private String tipoServicio;
+
+    @Column(name = "estado", length = 50)
+    private String estado;
+
+    @Column(name = "fecha")
+    private LocalDate fecha;
+
+    @Column(name = "hora")
+    private LocalTime hora;
+
     @ManyToOne
     @JoinColumns({
-        @JoinColumn(name = "numdocumentoemp", referencedColumnName = "numdocumento"), // Editable
-        @JoinColumn(name = "idempleado", referencedColumnName = "idempleado") // Editable
+        @JoinColumn(name = "numdocumentoemp", referencedColumnName = "numdocumento"),
+        @JoinColumn(name = "idempleado", referencedColumnName = "idempleado")
     })
     private Empleado empleado;
 
     @ManyToOne
     @JoinColumns({
-        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente"),      // Editable
-        @JoinColumn(name = "numdocumentopac", referencedColumnName = "numdocumento") // Editable
+        @JoinColumn(name = "codpaciente", referencedColumnName = "codpaciente"),
+        @JoinColumn(name = "numdocumentopac", referencedColumnName = "numdocumento")
     })
     private Paciente paciente;
 }

@@ -338,8 +338,7 @@
 
       // Verificar si hay sesión
       if (!usuario.idUsuario) {
-        // Cambia '/login' por 'login.html' para evitar errores de ruta
-        window.location.href = "login.html";
+        window.location.href = "/login";
       }
 
       // Mostrar información del usuario
@@ -353,23 +352,23 @@
             {
               title: "Gestión General",
               items: [
-                { icon: "🏥", text: "Sedes Hospitalarias", url: "sedes.html" },
-                { icon: "👥", text: "Pacientes", url: "pacientes.html" },
+                { icon: "🏥", text: "Sedes Hospitalarias", url: "/sedes" },
+                { icon: "👥", text: "Pacientes", url: "/pacientes" },
                 {
                   icon: "🏢",
                   text: "Departamentos",
-                  url: "departamentos.html",
+                  url: "/departamentos",
                 },
-                { icon: "👨‍⚕️", text: "Empleados", url: "empleados.html" },
+                { icon: "👨‍⚕️", text: "Empleados", url: "/empleados" },
               ],
             },
             {
               title: "Administración",
               items: [
-                { icon: "📊", text: "Reportes Médicos", url: "reportes.html" },
-                { icon: "👤", text: "Usuarios", url: "usuarios.html" },
-                { icon: "🧑", text: "Personas", url: "personas.html" },
-                { icon: "🦠", text: "Enfermedades", url: "enfermedades.html" },
+                { icon: "📊", text: "Reportes Médicos", url: "/reportes" },
+                { icon: "👤", text: "Usuarios", url: "/usuarios" },
+                { icon: "🧑", text: "Personas", url: "/personas" },
+                { icon: "🦠", text: "Enfermedades", url: "/enfermedades" },
               ],
             },
             {
@@ -378,9 +377,9 @@
                 {
                   icon: "🔍",
                   text: "Auditoría de Accesos",
-                  url: "auditoria.html",
+                  url: "/auditoria",
                 },
-                { icon: "⚙️", text: "Equipamiento", url: "equipamientos.html" },
+                { icon: "⚙️", text: "Equipamiento", url: "/equipamientos" },
               ],
             },
           ],
@@ -393,17 +392,17 @@
                 {
                   icon: "📋",
                   text: "Historias Clínicas",
-                  url: "historias-clinicas.html",
+                  url: "/historias-clinicas",
                 },
-                { icon: "🩺", text: "Diagnósticos", url: "diagnosticos.html" },
-                { icon: "📅", text: "Mis Citas", url: "citas.html" },
+                { icon: "🩺", text: "Diagnósticos", url: "/diagnostico" },
+                { icon: "📅", text: "Mis Citas", url: "/dashboard-medico" },
               ],
             },
             {
               title: "Recursos",
               items: [
-                { icon: "🦠", text: "Enfermedades", url: "enfermedades.html" },
-                { icon: "💊", text: "Medicamentos", url: "medicamentos.html" },
+                { icon: "🦠", text: "Enfermedades", url: "/enfermedades" },
+                { icon: "💊", text: "Medicamentos", url: "/medicamentos" },
               ],
             },
           ],
@@ -413,9 +412,9 @@
             {
               title: "Gestión de Pacientes",
               items: [
-                { icon: "👥", text: "Pacientes", url: "pacientes.html" },
-                { icon: "🧑", text: "Personas", url: "personas.html" },
-                { icon: "📅", text: "Citas", url: "citas.html" },
+                { icon: "👥", text: "Pacientes", url: "/pacientes" },
+                { icon: "🆔", text: "Personas", url: "/personas" },
+                { icon: "📅", text: "Citas", url: "/citas" },
               ],
             },
           ],
@@ -423,12 +422,12 @@
         TecnicoMantenimiento: {
           sections: [
             {
-              title: "Equipamiento",
+              title: "Gestión de Equipamiento",
               items: [
                 {
-                  icon: "⚙️",
+                  icon: "🔧",
                   text: "Equipamientos",
-                  url: "equipamientos.html",
+                  url: "/equipamientos",
                 },
               ],
             },
@@ -437,13 +436,13 @@
         AsistenteBodega: {
           sections: [
             {
-              title: "Inventario",
+              title: "Gestión de Inventario",
               items: [
-                { icon: "💊", text: "Medicamentos", url: "medicamentos.html" },
+                { icon: "💊", text: "Medicamentos", url: "/medicamentos" },
                 {
-                  icon: "⚙️",
+                  icon: "🔧",
                   text: "Equipamientos",
-                  url: "equipamientos.html",
+                  url: "/equipamientos",
                 },
               ],
             },
@@ -525,7 +524,7 @@
             localStorage.removeItem("rememberMe");
 
             // Redirigir al login
-            window.location.href = "login.html";
+            window.location.href = "/login";
           }
         }
       }

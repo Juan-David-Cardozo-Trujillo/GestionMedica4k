@@ -59,12 +59,30 @@ async function loadEnfermedades() {
 function populatePacienteSelect() {
     const select = document.getElementById('codPaciente');
     select.innerHTML = '<option value="">Seleccione un paciente</option>';
-    pacientes.forEach(p => {
-        const nombre = p.persona ? `${p.persona.nombrePersona} ${p.persona.apellidoPersona}` : 'Sin nombre';
-        const numDoc = p.persona ? p.persona.numDocumento : 'N/A';
+    
+    console.log('Pacientes cargados:', pacientes); // Debug
+    
+    // Filtrar pacientes que NO tienen historia clínica
+    const pacientesSinHistoria = pacientes.filter(p => {
+        const codPaciente = p.codpaciente;
+        return !allHistorias.some(h => h.codPaciente === codPaciente);
+    });
+    
+    if (pacientesSinHistoria.length === 0) {
+        select.innerHTML = '<option value="">Todos los pacientes ya tienen historia clínica</option>';
+        return;
+    }
+    
+    pacientesSinHistoria.forEach(p => {
+        // El API devuelve nombrePersona y apellidoPersona directamente en el objeto paciente
+        const nombre = p.nombrePersona && p.apellidoPersona ? 
+            `${p.nombrePersona} ${p.apellidoPersona}` : 'Sin nombre';
+        const numDoc = p.numdocumento || 'N/A';
+        const codPaciente = p.codpaciente;
+        
         select.innerHTML += `
-            <option value="${p.codPaciente}">
-                ${nombre} - ${numDoc}
+            <option value="${codPaciente}" data-numdocumento="${numDoc}">
+                ${nombre} - Doc: ${numDoc}
             </option>
         `;
     });
@@ -75,9 +93,11 @@ function populatePacienteFilter() {
     const select = document.getElementById('filterPaciente');
     select.innerHTML = '<option value="">Todos los pacientes</option>';
     pacientes.forEach(p => {
-        const nombre = p.persona ? `${p.persona.nombrePersona} ${p.persona.apellidoPersona}` : 'Sin nombre';
+        const nombre = p.nombrePersona && p.apellidoPersona ? 
+            `${p.nombrePersona} ${p.apellidoPersona}` : 'Sin nombre';
+        const codPaciente = p.codpaciente;
         select.innerHTML += `
-            <option value="${p.codPaciente}">
+            <option value="${codPaciente}">
                 ${nombre}
             </option>
         `;
@@ -106,20 +126,23 @@ function renderHistorias(historias) {
     
     historias.forEach(historia => {
         const paciente = historia.paciente || {};
-        const nombre = paciente.nombrePersona ? `${paciente.nombrePersona} ${paciente.apellidoPersona}` : 'N/A';
+        const nombre = paciente.nombrePersona && paciente.apellidoPersona ? 
+            `${paciente.nombrePersona} ${paciente.apellidoPersona}` : 'N/A';
         const edad = calcularEdad(paciente.fechaNacimiento);
-        const fecha = new Date(historia.fechaCreacion || Date.now()).toLocaleDateString('es-ES');
+        // Como no hay campo fechaCreacion en el modelo, mostramos fecha actual
+        const fecha = 'Reciente';
+        const codHistoria = historia.codHistoria || 'N/A';
         
         tbody.innerHTML += `
-            <tr onclick="showDetails(${historia.codigoHistoria})">
-                <td>${historia.codigoHistoria}</td>
+            <tr onclick="showDetails(${codHistoria})" style="cursor: pointer;">
+                <td>${codHistoria}</td>
                 <td>${nombre}</td>
-                <td>${paciente.numDocumento || 'N/A'}</td>
+                <td>${paciente.numDocumento || historia.numDocumento || 'N/A'}</td>
                 <td>${edad || 'N/A'}</td>
                 <td>${fecha}</td>
                 <td onclick="event.stopPropagation();">
-                    <button class="btn-icon" onclick="showDetails(${historia.codigoHistoria})" title="Ver">👁️</button>
-                    <button class="btn-icon" onclick="deleteHistoria(${historia.codigoHistoria})" title="Eliminar">🗑️</button>
+                    <button class="btn-icon" onclick="showDetails(${codHistoria})" title="Ver">👁️</button>
+                    <button class="btn-icon" onclick="deleteHistoria(${codHistoria})" title="Eliminar">🗑️</button>
                 </td>
             </tr>
         `;
@@ -160,7 +183,8 @@ function closeModal() {
 async function saveHistoria(event) {
     event.preventDefault();
     
-    const codPaciente = parseInt(document.getElementById('codPaciente').value);
+    const select = document.getElementById('codPaciente');
+    const codPaciente = parseInt(select.value);
     const observaciones = document.getElementById('observaciones').value;
     
     if (!codPaciente) {
@@ -168,8 +192,24 @@ async function saveHistoria(event) {
         return;
     }
     
+    // Verificar si el paciente ya tiene una historia clínica
+    const historiaExistente = allHistorias.find(h => h.codPaciente === codPaciente);
+    if (historiaExistente) {
+        showNotification('Este paciente ya tiene una historia clínica registrada', 'error');
+        return;
+    }
+    
+    // Buscar el paciente para obtener el numDocumento
+    const paciente = pacientes.find(p => p.codpaciente === codPaciente);
+    if (!paciente || !paciente.numdocumento) {
+        console.error('Paciente encontrado:', paciente);
+        showNotification('No se pudo obtener el documento del paciente', 'error');
+        return;
+    }
+    
     const data = {
         codPaciente: codPaciente,
+        numDocumento: paciente.numdocumento,
         observaciones: observaciones
     };
     
@@ -183,7 +223,13 @@ async function saveHistoria(event) {
             body: JSON.stringify(data)
         });
         
-        if (!response.ok) throw new Error('Error al guardar');
+        console.log('Response status:', response.status);
+        const result = await response.text();
+        console.log('Response:', result);
+        
+        if (!response.ok) {
+            throw new Error('Error al guardar: ' + result);
+        }
 
         await registrarAuditoria('INSERT', 'historias-clinicas');
         
@@ -217,7 +263,7 @@ async function showDetails(codigoHistoria) {
         
         document.getElementById('historiaDetalles').innerHTML = `
             <div class="detail-row">
-                <strong>Código Historia:</strong> <span>${historia.codigoHistoria}</span>
+                <strong>Código Historia:</strong> <span>${historia.codHistoria}</span>
             </div>
             <div class="detail-row">
                 <strong>Paciente:</strong> <span>${nombre}</span>
@@ -229,10 +275,7 @@ async function showDetails(codigoHistoria) {
                 <strong>Edad:</strong> <span>${edad || 'N/A'} años</span>
             </div>
             <div class="detail-row">
-                <strong>Fecha de Creación:</strong> <span>${new Date(historia.fechaCreacion).toLocaleDateString('es-ES')}</span>
-            </div>
-            <div class="detail-row">
-                <strong>Observaciones:</strong> <span>${historia.observaciones || 'Sin observaciones'}</span>
+                <strong>Código Paciente:</strong> <span>${historia.codPaciente}</span>
             </div>
         `;
         
@@ -258,13 +301,18 @@ function renderDiagnosticos(diagnosticos) {
     container.innerHTML = '';
     diagnosticos.forEach(diag => {
         const nombreEnfermedad = diag.nombreEnfermedad || 'Enfermedad desconocida';
-        const fecha = new Date(diag.fechaRegistro).toLocaleDateString('es-ES');
+        const fecha = diag.fechaRegistro ? 
+            new Date(diag.fechaRegistro).toLocaleDateString('es-ES') : 'N/A';
+        const hora = diag.horaRegistro || 'N/A';
         
         container.innerHTML += `
             <div class="diagnostico-item">
-                <strong>${nombreEnfermedad}</strong>
-                <p>Descripción: ${diag.descripcion || 'N/A'}</p>
-                <p>Fecha: ${fecha}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>🔬 ${nombreEnfermedad}</strong>
+                    <button class="btn-icon" onclick="deleteDiagnostico(${diag.codHistoria}, ${diag.idEnfermedad}, ${diag.idCita})" title="Eliminar">🗑️</button>
+                </div>
+                <p><strong>Fecha:</strong> ${fecha} ${hora}</p>
+                <p><strong>Cita ID:</strong> ${diag.idCita}</p>
             </div>
         `;
     });
@@ -277,14 +325,46 @@ function closeDetallesModal() {
 }
 
 // Abrir modal diagnóstico
-function openDiagnosticoModal() {
-    const select = document.getElementById('idEnfermedad');
-    select.innerHTML = '<option value="">Seleccione enfermedad</option>';
+async function openDiagnosticoModal() {
+    // Cargar enfermedades
+    const selectEnfermedad = document.getElementById('idEnfermedad');
+    selectEnfermedad.innerHTML = '<option value="">Seleccione enfermedad</option>';
     enfermedades.forEach(e => {
-        select.innerHTML += `
-            <option value="${e.idenfermedad}">${e.nombreenfermedad}</option>
+        // Acepta tanto idEnfermedad/nombreEnfermedad como idenfermedad/nombreenfermedad
+        const id = e.idEnfermedad || e.idenfermedad;
+        const nombre = e.nombreEnfermedad || e.nombreenfermedad || 'Sin nombre';
+        selectEnfermedad.innerHTML += `
+            <option value="${id}">${nombre}</option>
         `;
     });
+    
+    // Cargar citas del paciente
+    try {
+        const response = await fetch(`${API_URL}/citas`);
+        const todasLasCitas = await response.json();
+        
+        // Filtrar citas del paciente actual
+        const citasPaciente = todasLasCitas.filter(cita => 
+            cita.paciente && 
+            cita.paciente.codpaciente === currentHistoria.codPaciente
+        );
+        
+        const selectCita = document.getElementById('idCita');
+        selectCita.innerHTML = '<option value="">Seleccione una cita</option>';
+        citasPaciente.forEach(cita => {
+            const fecha = cita.fecha || 'Sin fecha';
+            const tipo = cita.tiposervicio || 'Consulta';
+            selectCita.innerHTML += `
+                <option value="${cita.idcita}">${tipo} - ${fecha}</option>
+            `;
+        });
+        
+        if (citasPaciente.length === 0) {
+            showNotification('Este paciente no tiene citas registradas', 'warning');
+        }
+    } catch (error) {
+        console.error('Error al cargar citas:', error);
+    }
     
     document.getElementById('diagnosticoModal').style.display = 'block';
 }
@@ -299,16 +379,23 @@ function closeDiagnosticoModal() {
 async function saveDiagnostico(event) {
     event.preventDefault();
     
+    const idEnfermedad = parseInt(document.getElementById('idEnfermedad').value);
+    const idCita = parseInt(document.getElementById('idCita').value);
+    
+    if (!idEnfermedad || !idCita) {
+        showNotification('Por favor complete todos los campos', 'error');
+        return;
+    }
+    
     const data = {
-        codHistoria: currentHistoria.codhistoria,
-        idEnfermedad: parseInt(document.getElementById('idEnfermedad').value),
-        idCita: parseInt(document.getElementById('idCita').value),
+        idEnfermedad: idEnfermedad,
+        idCita: idCita,
         fechaRegistro: new Date().toISOString().split('T')[0],
-        horaRegistro: new Date().toTimeString().split(' ')[0]
+        horaRegistro: new Date().toTimeString().split(' ')[0].substring(0, 8)
     };
     
     try {
-        const response = await fetch(`${API_URL}/historias-clinicas/diagnostico`, {
+        const response = await fetch(`${API_URL}/historias-clinicas/${currentHistoria.codHistoria}/diagnosticos`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -323,7 +410,8 @@ async function saveDiagnostico(event) {
         
         showNotification('Diagnóstico registrado correctamente', 'success');
         closeDiagnosticoModal();
-        await loadDiagnosticos(currentHistoria.codhistoria);
+        // Recargar los detalles de la historia
+        await showDetails(currentHistoria.codHistoria);
     } catch (error) {
         console.error('Error:', error);
         showNotification('Error al registrar diagnóstico', 'error');
@@ -351,6 +439,29 @@ async function deleteHistoria(codHistoria) {
     }
 }
 
+// Eliminar diagnóstico
+async function deleteDiagnostico(codHistoria, idEnfermedad, idCita) {
+    if (!confirm('¿Eliminar este diagnóstico?')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/historias-clinicas/${codHistoria}/diagnosticos/${idEnfermedad}/${idCita}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) throw new Error('Error al eliminar diagnóstico');
+
+        await registrarAuditoria('DELETE', 'historias_clinicas_registra_diagnostica');
+        
+        showNotification('Diagnóstico eliminado correctamente', 'success');
+        // Recargar los detalles de la historia
+        await showDetails(codHistoria);
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al eliminar diagnóstico', 'error');
+    }
+}
+
 // Filtrar historias
 function filterHistorias() {
     const search = document.getElementById('searchInput').value.toLowerCase();
@@ -358,13 +469,14 @@ function filterHistorias() {
     
     const filtered = allHistorias.filter(h => {
         const pacienteData = h.paciente || {};
-        const nombre = pacienteData.nombrePersona ? `${pacienteData.nombrePersona} ${pacienteData.apellidoPersona}` : '';
+        const nombre = pacienteData.nombrePersona && pacienteData.apellidoPersona ? 
+            `${pacienteData.nombrePersona} ${pacienteData.apellidoPersona}` : '';
         
-        const matchSearch = h.codigoHistoria.toString().includes(search) ||
+        const matchSearch = h.codHistoria.toString().includes(search) ||
                           nombre.toLowerCase().includes(search) ||
                           (pacienteData.numDocumento ? pacienteData.numDocumento.toString().includes(search) : false);
         
-        const matchPaciente = !paciente || (pacienteData.codPaciente && pacienteData.codPaciente.toString() === paciente);
+        const matchPaciente = !paciente || (h.codPaciente && h.codPaciente.toString() === paciente);
         
         return matchSearch && matchPaciente;
     });

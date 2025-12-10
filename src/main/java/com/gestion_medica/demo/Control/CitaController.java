@@ -1,12 +1,20 @@
 package com.gestion_medica.demo.Control;
 
-import com.gestion_medica.demo.model.*;
-import com.gestion_medica.demo.service.*;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.gestion_medica.demo.model.Cita;
+import com.gestion_medica.demo.service.CitaService;
+import com.gestion_medica.demo.service.EmpleadoService;
+import com.gestion_medica.demo.service.PacienteService;
 
 @Controller
 @RequestMapping("/citas")
@@ -25,7 +33,7 @@ public class CitaController {
     public String listar(Model model) {
         List<Cita> citas = citaService.findAll();
         model.addAttribute("citas", citas);
-        return "citas/lista";
+        return "citas";
     }
 
     @GetMapping("/nuevo")

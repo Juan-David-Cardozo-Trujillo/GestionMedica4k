@@ -27,16 +27,23 @@ public class EmpleadoService {
         return empleadoRepository.findAll();
     }
 
+    public Empleado findById(EmpleadoId id) {
+        return empleadoRepository.findById(id).orElse(null);
+    }
+
     // Método para guardar Persona + Empleado recibiendo datos sueltos
     public Empleado registrarEmpleadoSinDTO(Persona persona, String cargo, String nomDepto, Integer idSede) {
 
         // 1. Guardar la Persona primero (Fundamental para tener el numDocumento en BD)
         Persona personaGuardada = personaRepository.save(persona);
 
-        // 2. Crear referencia al Departamento
-        Departamento deptoRef = new Departamento();
-        deptoRef.setNombreDepartamento(nomDepto);
-        deptoRef.setIdSede(idSede);
+        // 2. Crear referencia al Departamento solo si se proporcionan los datos
+        Departamento deptoRef = null;
+        if (nomDepto != null && !nomDepto.isBlank() && idSede != null) {
+            deptoRef = new Departamento();
+            deptoRef.setNombreDepartamento(nomDepto);
+            deptoRef.setIdSede(idSede);
+        }
 
         // 3. Crear el Empleado
         Empleado emp = new Empleado();
@@ -44,7 +51,7 @@ public class EmpleadoService {
         // La parte 2 (idEmpleado) se genera automática por la secuencia
 
         emp.setCargo(cargo);
-        emp.setDepartamento(deptoRef);
+        emp.setDepartamento(deptoRef); // Puede ser null
 
         return empleadoRepository.save(emp);
     }

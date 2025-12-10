@@ -1,18 +1,31 @@
 package com.gestion_medica.demo.Control;
 
-import com.gestion_medica.demo.model.Persona;
-import com.gestion_medica.demo.model.Usuario;
-import com.gestion_medica.demo.service.PersonaService;
-import com.gestion_medica.demo.service.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.gestion_medica.demo.model.Paciente;
+import com.gestion_medica.demo.model.Persona;
+import com.gestion_medica.demo.model.Usuario;
+import com.gestion_medica.demo.service.EmpleadoService;
+import com.gestion_medica.demo.service.PacienteService;
+import com.gestion_medica.demo.service.PersonaService;
+import com.gestion_medica.demo.service.UsuarioService;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -44,6 +57,12 @@ public class UsuarioController {
 
     @Autowired
     private PersonaService personaService;
+
+    @Autowired
+    private PacienteService pacienteService;
+
+    @Autowired
+    private EmpleadoService empleadoService;
 
     /**
      * Obtener todos los usuarios
@@ -114,8 +133,79 @@ public class UsuarioController {
 
             Usuario savedUsuario = usuarioService.save(usuario);
 
+            // Si el rol es Paciente, crear automáticamente el registro en la tabla pacientes
+            String rol = (String) usuarioData.get("rol");
+            if ("Paciente".equalsIgnoreCase(rol)) {
+                String direccion = (String) data.get("direccion");
+                
+                if (direccion == null || direccion.trim().isEmpty()) {
+                    response.put("success", false);
+                    response.put("mensaje", "La dirección es requerida para pacientes");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                }
+                
+                Paciente paciente = new Paciente();
+                paciente.setNumDocumento(persona.getNumDocumento());
+                paciente.setDirPaciente(direccion);
+                paciente.setPersona(persona);
+                
+                pacienteService.save(paciente);
+                
+                response.put("paciente", paciente);
+                response.put("mensaje", "Usuario paciente creado exitosamente. Ya puede iniciar sesión.");
+            }
+
+            // Si el rol es Medico, crear automáticamente el registro en la tabla empleados
+            if ("Medico".equalsIgnoreCase(rol) || "Médico".equalsIgnoreCase(rol)) {
+                // Recibir datos del departamento desde el frontend
+                String cargo = "Medico"; // cargo estándar
+                String nombreDepartamento = null;
+                Integer idSede = null;
+
+                // Intentar obtener departamento e idSede del request
+                if (data.containsKey("nombreDepartamento")) {
+                    nombreDepartamento = data.get("nombreDepartamento").toString();
+                }
+                if (data.containsKey("idSede")) {
+                    try {
+                        idSede = Integer.valueOf(data.get("idSede").toString());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Error convirtiendo idSede: " + e.getMessage());
+                    }
+                }
+
+                try {
+                    System.out.println("=== INTENTANDO CREAR EMPLEADO ===");
+                    System.out.println("Persona numDocumento: " + persona.getNumDocumento());
+                    System.out.println("Cargo: " + cargo);
+                    System.out.println("Departamento: " + nombreDepartamento);
+                    System.out.println("IdSede: " + idSede);
+                    
+                    // Registrar Persona ya creada + Empleado con departamento
+                    com.gestion_medica.demo.model.Empleado empleadoCreado = empleadoService
+                        .registrarEmpleadoSinDTO(persona, cargo, nombreDepartamento, idSede);
+                    
+                    System.out.println("=== EMPLEADO CREADO EXITOSAMENTE ===");
+                    System.out.println("IdEmpleado: " + empleadoCreado.getIdEmpleado());
+                    
+                    response.put("empleado", empleadoCreado);
+                    // Mensaje complementario si no se había definido
+                    if (response.get("mensaje") == null) {
+                        response.put("mensaje", "Usuario médico creado exitosamente y vinculado como empleado.");
+                    }
+                } catch (Exception ex) {
+                    // No romper la creación de usuario si falla la creación de empleado
+                    System.err.println("=== ERROR AL CREAR EMPLEADO ===");
+                    ex.printStackTrace();
+                    response.put("empleadoError", "No se pudo crear el empleado vinculado: " + ex.getMessage());
+                    response.put("empleadoErrorDetalle", ex.getClass().getName());
+                }
+            }
+
             response.put("success", true);
-            response.put("mensaje", "Usuario creado exitosamente");
+            if (response.get("mensaje") == null) {
+                response.put("mensaje", "Usuario creado exitosamente");
+            }
             response.put("usuario", savedUsuario);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);

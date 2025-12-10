@@ -65,6 +65,7 @@ async function handleLogin(event) {
                 localStorage.setItem('userRole', data.usuario.rol || 'Usuario');
                 localStorage.setItem('userName', data.usuario.nombreUsuario || username);
                 localStorage.setItem('userId', data.usuario.idUsuario || '');
+                localStorage.setItem('numDocumento', data.usuario.numDocumento || '');
             }
             
             if (rememberMe) {
@@ -73,9 +74,16 @@ async function handleLogin(event) {
             
             showAlert('¡Inicio de sesión exitoso!', 'success');
             
-            // Redirección explícita al archivo HTML
+            // Redirección según el rol del usuario
             setTimeout(() => {
-                window.location.href = 'dashboard.html';
+                const rol = data.usuario.rol.toLowerCase();
+                
+                if (rol === 'paciente') {
+                    window.location.href = '/dashboard-paciente';
+                } else {
+                    // Para médico, administrador y otros roles
+                    window.location.href = '/dashboard';
+                }
             }, 1000); // Un pequeño retraso para que veas el mensaje de éxito
             
         } else {

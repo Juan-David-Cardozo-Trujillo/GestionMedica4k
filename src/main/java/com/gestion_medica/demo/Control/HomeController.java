@@ -1,16 +1,20 @@
 package com.gestion_medica.demo.Control;
 
-import com.gestion_medica.demo.model.Usuario;
-import com.gestion_medica.demo.service.UsuarioService;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import com.gestion_medica.demo.model.Usuario;
+import com.gestion_medica.demo.service.UsuarioService;
 
 @Controller
 public class HomeController {
@@ -31,6 +35,71 @@ public class HomeController {
     @GetMapping("/dashboard")
     public String dashboard() {
         return "dashboard";
+    }
+
+    @GetMapping("/dashboard-paciente")
+    public String dashboardPaciente() {
+        return "dashboard-paciente";
+    }
+
+    @GetMapping("/dashboard-medico")
+    public String dashboardMedico() {
+        return "dashboard-medico";
+    }
+
+    @GetMapping("/usuarios")
+    public String usuarios() {
+        return "usuarios";
+    }
+
+    @GetMapping("/personas")
+    public String personas() {
+        return "personas";
+    }
+
+    @GetMapping("/pacientes")
+    public String pacientes() {
+        return "Pacientes";
+    }
+
+    @GetMapping("/empleados")
+    public String empleados() {
+        return "empleados";
+    }
+
+    @GetMapping("/historias-clinicas")
+    public String historiasClinicas() {
+        return "historias-clinicas";
+    }
+
+    @GetMapping("/diagnostico")
+    public String diagnostico() {
+        return "diagnostico";
+    }
+
+    @GetMapping("/medicamentos")
+    public String medicamentos() {
+        return "medicamentos";
+    }
+
+    @GetMapping("/enfermedades")
+    public String enfermedades() {
+        return "enfermedades";
+    }
+
+    @GetMapping("/departamentos")
+    public String departamentos() {
+        return "departamentos";
+    }
+
+    @GetMapping("/sedes")
+    public String sedes() {
+        return "sedes";
+    }
+
+    @GetMapping("/auditoria")
+    public String auditoria() {
+        return "auditoria";
     }
 
     /**

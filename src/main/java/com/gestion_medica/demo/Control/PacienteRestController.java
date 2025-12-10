@@ -1,16 +1,29 @@
 package com.gestion_medica.demo.Control;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.gestion_medica.demo.model.Paciente;
 import com.gestion_medica.demo.model.Persona;
 import com.gestion_medica.demo.model.keys.PacienteId;
 import com.gestion_medica.demo.service.PacienteService;
 import com.gestion_medica.demo.service.PersonaService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/api/pacientes")
@@ -46,8 +59,8 @@ public class PacienteRestController {
                 if (p.getPersona() != null) {
                     Persona persona = p.getPersona();
                     pacienteData.put("tipodocumento", persona.getTipoDocumento());
-                    pacienteData.put("nombrepersona", persona.getNombrePersona());
-                    pacienteData.put("apellidopersona", persona.getApellidoPersona());
+                    pacienteData.put("nombrePersona", persona.getNombrePersona());
+                    pacienteData.put("apellidoPersona", persona.getApellidoPersona());
                     pacienteData.put("genero", persona.getGenero());
                     pacienteData.put("fechanacimiento", persona.getFechaNacimiento());
                     pacienteData.put("correo", persona.getCorreo());

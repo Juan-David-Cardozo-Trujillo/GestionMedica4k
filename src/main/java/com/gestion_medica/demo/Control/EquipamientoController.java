@@ -1,12 +1,18 @@
 package com.gestion_medica.demo.Control;
 
-import com.gestion_medica.demo.model.*;
-import com.gestion_medica.demo.service.*;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.gestion_medica.demo.model.Equipamiento;
+import com.gestion_medica.demo.service.EquipamientoService;
 
 @Controller
 @RequestMapping("/equipamientos")
@@ -19,7 +25,7 @@ public class EquipamientoController {
     public String listar(Model model) {
         List<Equipamiento> equipamientos = equipamientoService.findAll();
         model.addAttribute("equipamientos", equipamientos);
-        return "equipamientos/lista";
+        return "equipamientos";
     }
 
     @GetMapping("/nuevo")

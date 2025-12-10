@@ -1,5 +1,5 @@
 // citas.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 let currentAppointment = null;
 let allAppointments = [];
 let patients = [];
@@ -31,49 +31,78 @@ function setMinDate() {
 // Cargar citas
 async function loadAppointments() {
     try {
-        const response = await fetch(`${API_URL}/citas`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        console.log('Intentando cargar citas desde:', `${API_URL}/citas`);
+        const response = await fetch(`${API_URL}/citas`);
         
-        if (!response.ok) throw new Error('Error al cargar citas');
+        console.log('Respuesta recibida:', response.status, response.statusText);
         
-        allAppointments = await response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error en respuesta:', errorText);
+            throw new Error('Error al cargar citas');
+        }
+        
+        const data = await response.json();
+        console.log('Datos de citas recibidos:', data);
+        
+        allAppointments = data;
         if (viewMode === 'list') {
             renderAppointmentsList(allAppointments);
         }
         renderCalendar();
     } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error al cargar las citas', 'error');
+        console.error('Error detallado:', error);
+        showNotification('Error al cargar las citas: ' + error.message, 'error');
     }
 }
 
 // Cargar pacientes
 async function loadPatients() {
     try {
-        const response = await fetch(`${API_URL}/pacientes`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        console.log('Cargando pacientes desde:', `${API_URL}/pacientes`);
+        const response = await fetch(`${API_URL}/pacientes`);
+        console.log('Respuesta pacientes:', response.status);
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar pacientes');
+        }
+        
         patients = await response.json();
+        console.log('Pacientes cargados:', patients.length);
         populatePatientSelect();
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al cargar pacientes:', error);
+        showNotification('Error al cargar pacientes', 'error');
     }
 }
 
 // Cargar médicos
 async function loadDoctors() {
     try {
-        const response = await fetch(`${API_URL}/empleados?cargo=Medico`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        doctors = await response.json();
+        console.log('Cargando empleados desde:', `${API_URL}/empleados`);
+        const response = await fetch(`${API_URL}/empleados`);
+        console.log('Respuesta empleados:', response.status);
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar empleados');
+        }
+        
+        const empleados = await response.json();
+        console.log('Empleados cargados:', empleados.length);
+        console.log('Empleados recibidos:', empleados);
+        // Filtrar solo los médicos (aceptar diferentes variaciones)
+        doctors = empleados.filter(emp => emp.cargo && (
+            emp.cargo.toLowerCase() === 'medico' || 
+            emp.cargo.toLowerCase() === 'médico' ||
+            emp.cargo.toLowerCase().includes('medic')
+        ));
+        console.log('Médicos filtrados:', doctors.length);
+        console.log('Médicos:', doctors);
         populateDoctorSelect();
         populateDoctorFilter();
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al cargar médicos:', error);
+        showNotification('Error al cargar médicos', 'error');
     }
 }
 
@@ -84,7 +113,7 @@ function populatePatientSelect() {
     patients.forEach(p => {
         select.innerHTML += `
             <option value="${p.codpaciente}" data-documento="${p.numdocumento}">
-                ${p.nombrepersona} ${p.apellidopersona} - ${p.numdocumento}
+                ${p.nombrePersona} ${p.apellidoPersona} - ${p.numdocumento}
             </option>
         `;
     });
@@ -93,23 +122,30 @@ function populatePatientSelect() {
 // Poblar select de médicos
 function populateDoctorSelect() {
     const select = document.getElementById('medico');
+    console.log('Poblando select de médicos, total:', doctors.length);
     select.innerHTML = '<option value="">Seleccione un médico</option>';
     doctors.forEach(d => {
+        console.log('Procesando médico:', d);
+        const nombreCompleto = d.persona ? `${d.persona.nombrePersona || ''} ${d.persona.apellidoPersona || ''}`.trim() : 'Sin nombre';
+        const departamento = d.departamento ? d.departamento.nombredepartamento : 'Sin departamento';
+        console.log('Nombre completo:', nombreCompleto, 'Departamento:', departamento);
         select.innerHTML += `
-            <option value="${d.idempleado}" data-documento="${d.numdocumento}">
-                Dr(a). ${d.nombrepersona} ${d.apellidopersona} - ${d.nombredepartamento}
+            <option value="${d.idEmpleado}" data-documento="${d.numDocumento}">
+                Dr(a). ${nombreCompleto} - ${departamento}
             </option>
         `;
     });
+    console.log('Select HTML final:', select.innerHTML);
 }
 
 // Poblar filtro de médicos
 function populateDoctorFilter() {
     const select = document.getElementById('filterMedico');
     doctors.forEach(d => {
+        const nombreCompleto = d.persona ? `${d.persona.nombrePersona || ''} ${d.persona.apellidoPersona || ''}`.trim() : 'Sin nombre';
         select.innerHTML += `
-            <option value="${d.idempleado}">
-                Dr(a). ${d.nombrepersona} ${d.apellidopersona}
+            <option value="${d.idEmpleado}">
+                Dr(a). ${nombreCompleto}
             </option>
         `;
     });
@@ -177,11 +213,15 @@ function renderCalendar() {
             appointmentsContainer.className = 'day-appointments';
             
             dayAppointments.slice(0, 3).forEach(apt => {
+                const pacienteNombre = apt.paciente && apt.paciente.nombrePersona
+                    ? apt.paciente.nombrePersona
+                    : 'Paciente';
+                
                 const aptDiv = document.createElement('div');
                 aptDiv.className = `appointment-item ${apt.estado.toLowerCase()}`;
                 aptDiv.innerHTML = `
                     <span class="apt-time">${apt.hora.substring(0, 5)}</span>
-                    <span class="apt-patient">${apt.paciente_nombre || 'Paciente'}</span>
+                    <span class="apt-patient">${pacienteNombre}</span>
                 `;
                 aptDiv.onclick = (e) => {
                     e.stopPropagation();
@@ -260,13 +300,21 @@ function renderAppointmentsList(appointments) {
     }
     
     appointments.forEach(apt => {
+        const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
+            ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`
+            : 'N/A';
+        
+        const medicoNombre = apt.medico && apt.medico.nombrePersona && apt.medico.apellidoPersona
+            ? `${apt.medico.nombrePersona} ${apt.medico.apellidoPersona}`
+            : 'N/A';
+        
         const row = `
             <tr onclick="showAppointmentDetails(${apt.idcita})" style="cursor:pointer;">
                 <td>${apt.idcita}</td>
                 <td>${new Date(apt.fecha).toLocaleDateString('es-ES')}</td>
                 <td>${apt.hora.substring(0, 5)}</td>
-                <td>${apt.paciente_nombre || 'N/A'}</td>
-                <td>Dr(a). ${apt.medico_nombre || 'N/A'}</td>
+                <td>${pacienteNombre}</td>
+                <td>Dr(a). ${medicoNombre}</td>
                 <td>${apt.tiposervicio}</td>
                 <td><span class="status-badge ${apt.estado.toLowerCase()}">${apt.estado}</span></td>
                 <td onclick="event.stopPropagation();">
@@ -282,11 +330,17 @@ function renderAppointmentsList(appointments) {
 // Mostrar detalles de cita
 async function showAppointmentDetails(idCita) {
     try {
-        const response = await fetch(`${API_URL}/citas/${idCita}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        const response = await fetch(`${API_URL}/citas/${idCita}`);
         
         const apt = await response.json();
+        
+        const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
+            ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`
+            : 'N/A';
+        
+        const medicoNombre = apt.medico && apt.medico.nombrePersona && apt.medico.apellidoPersona
+            ? `${apt.medico.nombrePersona} ${apt.medico.apellidoPersona}`
+            : 'N/A';
         
         document.getElementById('appointmentDetails').innerHTML = `
             <div class="detail-row">
@@ -299,10 +353,10 @@ async function showAppointmentDetails(idCita) {
                 <strong>Hora:</strong> <span>${apt.hora.substring(0, 5)}</span>
             </div>
             <div class="detail-row">
-                <strong>Paciente:</strong> <span>${apt.paciente_nombre || 'N/A'}</span>
+                <strong>Paciente:</strong> <span>${pacienteNombre}</span>
             </div>
             <div class="detail-row">
-                <strong>Médico:</strong> <span>Dr(a). ${apt.medico_nombre || 'N/A'}</span>
+                <strong>Médico:</strong> <span>Dr(a). ${medicoNombre}</span>
             </div>
             <div class="detail-row">
                 <strong>Tipo:</strong> <span>${apt.tiposervicio}</span>
@@ -371,13 +425,13 @@ async function saveAppointment(event) {
     const doctorSelect = document.getElementById('medico');
     
     const data = {
-        codPaciente: parseInt(patientSelect.value),
-        numDocumentoPac: parseInt(patientSelect.selectedOptions[0].dataset.documento),
-        numDocumentoEmp: parseInt(doctorSelect.selectedOptions[0].dataset.documento),
-        idEmpleado: parseInt(doctorSelect.value),
+        codpaciente: parseInt(patientSelect.value),
+        numdocumento: parseInt(patientSelect.selectedOptions[0].dataset.documento),
+        idempleado: parseInt(doctorSelect.value),
+        numdocumentoempleado: parseInt(doctorSelect.selectedOptions[0].dataset.documento),
         fecha: document.getElementById('fecha').value,
         hora: document.getElementById('hora').value + ':00',
-        tipoServicio: document.getElementById('tipoServicio').value,
+        tiposervicio: document.getElementById('tipoServicio').value,
         estado: document.getElementById('estado').value
     };
     
@@ -390,13 +444,15 @@ async function saveAppointment(event) {
         const response = await fetch(url, {
             method,
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
         });
         
-        if (!response.ok) throw new Error('Error al guardar');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al guardar');
+        }
 
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'citas');
@@ -406,16 +462,14 @@ async function saveAppointment(event) {
         loadAppointments();
     } catch (error) {
         console.error('Error:', error);
-        showNotification('Error al guardar la cita', 'error');
+        showNotification('Error al guardar la cita: ' + error.message, 'error');
     }
 }
 
 // Editar cita
 async function editAppointment(idCita) {
     try {
-        const response = await fetch(`${API_URL}/citas/${idCita}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        const response = await fetch(`${API_URL}/citas/${idCita}`);
         const apt = await response.json();
         openModal(apt);
     } catch (error) {
@@ -429,8 +483,7 @@ async function deleteAppointment(idCita) {
     
     try {
         const response = await fetch(`${API_URL}/citas/${idCita}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            method: 'DELETE'
         });
         
         if (!response.ok) throw new Error('Error');
@@ -452,8 +505,7 @@ async function cancelAppointment() {
         await fetch(`${API_URL}/citas/${currentAppointment.idcita}`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ ...currentAppointment, estado: 'Cancelada' })
         });
@@ -477,11 +529,18 @@ function filterAppointments() {
     const medico = document.getElementById('filterMedico').value;
     
     const filtered = allAppointments.filter(apt => {
-        const matchSearch = apt.paciente_nombre?.toLowerCase().includes(search) ||
-                          apt.medico_nombre?.toLowerCase().includes(search);
+        const pacienteNombre = apt.paciente && apt.paciente.nombrepersona && apt.paciente.apellidopersona
+            ? `${apt.paciente.nombrepersona} ${apt.paciente.apellidopersona}`.toLowerCase()
+            : '';
+        
+        const medicoNombre = apt.medico && apt.medico.nombrepersona && apt.medico.apellidopersona
+            ? `${apt.medico.nombrepersona} ${apt.medico.apellidopersona}`.toLowerCase()
+            : '';
+        
+        const matchSearch = pacienteNombre.includes(search) || medicoNombre.includes(search);
         const matchEstado = !estado || apt.estado === estado;
         const matchFecha = !fecha || apt.fecha === fecha;
-        const matchMedico = !medico || apt.numdocumentoemp == medico;
+        const matchMedico = !medico || (apt.medico && apt.medico.idempleado == medico);
         
         return matchSearch && matchEstado && matchFecha && matchMedico;
     });

@@ -14,7 +14,7 @@
                 <button class="btn btn-primary" onclick="openModal()">
                     ➕ Nuevo Usuario
                 </button>
-                <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
                     ← Volver
                 </button>
             </div>
@@ -140,14 +140,43 @@
 
                 <div class="form-group">
                     <label>Rol del Usuario *</label>
-                    <select id="rol" required>
+                    <select id="rol" required onchange="handleRoleChange()">
                         <option value="">Seleccione un rol</option>
+                        <option value="Paciente">🏥 Paciente (Registro público)</option>
                         <option value="Administrador">👨‍💼 Administrador</option>
                         <option value="Medico">👨‍⚕️ Médico</option>
                         <option value="Secretaria">👩‍💼 Secretaria</option>
                         <option value="TecnicoMantenimiento">🔧 Técnico Mantenimiento</option>
                         <option value="AsistenteBodega">📦 Asistente Bodega</option>
                     </select>
+                </div>
+
+                <div class="form-group" id="direccionGroup" style="display:none;">
+                    <label>Dirección de Residencia *</label>
+                    <input type="text" id="direccion" 
+                           placeholder="Ej: Calle 123 #45-67, Bogotá">
+                    <small class="form-hint">Campo requerido para pacientes</small>
+                </div>
+
+                <!-- Nuevo: Campos para Médicos -->
+                <div id="medicoFields" style="display:none;">
+                    <h3 class="section-title">🏥 Datos del Médico</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Departamento *</label>
+                            <select id="departamento">
+                                <option value="">Cargando departamentos...</option>
+                            </select>
+                            <small class="form-hint">Departamento donde trabajará el médico</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Sede *</label>
+                            <select id="sede">
+                                <option value="">Cargando sedes...</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="permissions-info" id="permissionsInfo"></div>
