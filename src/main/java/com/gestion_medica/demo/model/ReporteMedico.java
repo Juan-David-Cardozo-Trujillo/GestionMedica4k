@@ -1,15 +1,7 @@
 package com.gestion_medica.demo.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class ReporteMedico {
 
     @Id
@@ -33,13 +24,13 @@ public class ReporteMedico {
     @Column(name = "fechageneracion", nullable = false)
     private LocalDate fechaGeneracion;
 
-    @Column(name = "tiporeporte", nullable = false, length = 50)
+    @Column(name = "tiporeporte", length = 50, nullable = false)
     private String tipoReporte;
 
-    @Column(name = "resumen", nullable = false, length = 150)
+    @Column(name = "resumen", length = 150, nullable = false)
     private String resumen;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idsede", insertable = false, updatable = false)
     private SedeHospitalaria sede;
 }

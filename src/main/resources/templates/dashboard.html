@@ -275,6 +275,134 @@
           grid-template-columns: 1fr;
         }
       }
+      /* Estilos Específicos para Médico y Paciente (Fusionados) */
+      /* Médico Calendar */
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      }
+      .calendar-header {
+        text-align: center;
+        font-weight: bold;
+        color: #667eea;
+        padding: 10px;
+      }
+      .calendar-day {
+        min-height: 100px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+      .calendar-day:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+      }
+      .calendar-day.today {
+        background: #f0f4ff;
+        border: 2px solid #667eea;
+      }
+      .calendar-day.has-appointments {
+         /* Indicador visual */
+      }
+      .calendar-day.empty {
+        background: #fafafa;
+        cursor: default;
+      }
+      .day-number {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+      .appointment-count {
+        font-size: 0.75rem;
+        color: #667eea;
+        font-weight: bold;
+      }
+      .cita-preview {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: #eee;
+        border-radius: 4px;
+        padding: 2px 4px;
+        margin-top: 2px;
+      }
+      .calendar-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .btn-nav {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .cita-card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+      }
+      
+      /* Paciente Cards */
+      .sections-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+          gap: 25px;
+      }
+      .section-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+      .section-title { font-size: 1.2rem; color: #333; }
+      .cita-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+      }
+      .cita-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+      .cita-fecha { font-weight: bold; color: #667eea; }
+      .cita-estado { font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+      .estado-programada { background: #e3f2fd; color: #1976d2; }
+      .estado-completada { background: #e8f5e9; color: #388e3c; }
+      .estado-cancelada { background: #ffebee; color: #d32f2f; }
+      
+      .historia-item {
+        background: white;
+        border: 1px solid #eee;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .empty-state { text-align: center; color: #999; padding: 20px; }
+      .empty-state-icon { font-size: 2rem; display: block; margin-bottom: 10px; }
     </style>
   </head>
   <body>
@@ -312,6 +440,8 @@
         </div>
 
         <div class="content-area" id="contentArea">
+          
+          <!-- Vista por Defecto (Admin, Secretaria, etc.) -->
           <div class="content-grid" id="contentGrid">
             <div class="content-card">
               <div class="card-icon">👋</div>
@@ -321,33 +451,95 @@
               </p>
             </div>
           </div>
+
+          <!-- Vista Específica: MÉDICO -->
+          <div id="medicoView" style="display: none;">
+             <div class="content-grid">
+                <div class="content-card">
+                  <div class="card-icon">👋</div>
+                  <h3 class="card-title" id="medicoNameTitle">Bienvenido, Doctor</h3>
+                  <p class="card-description">
+                    Utilice el menú lateral para gestionar sus historias clínicas y ver su agenda.
+                  </p>
+                  <a href="citas.html" class="card-action">Ir a Mis Citas</a>
+                </div>
+             </div>
+          </div>
+
+          <!-- Vista Específica: PACIENTE -->
+          <div id="pacienteView" style="display: none;">
+            
+            <!-- Sub-vista: Bienvenida Paciente -->
+            <div id="pacienteWelcomeView">
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-icon">👋</div>
+                        <h3 class="card-title">Bienvenido, Paciente</h3>
+                        <p class="card-description">
+                            Utilice el menú lateral para ver sus citas o su historia clínica.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-vista: Citas (Calendario) -->
+            <div id="pacienteCitasView" style="display: none;">
+                 <div class="calendar-controls">
+                    <button class="btn-nav" onclick="previousMonth()">◀ Anterior</button>
+                    <h2 id="pacienteCurrentMonth">Mes</h2>
+                    <button class="btn-nav" onclick="nextMonth()">Siguiente ▶</button>
+                </div>
+                <div id="pacienteCalendar" class="calendar-grid"></div>
+                
+                <div id="pacienteCitasDelDia" style="margin-top: 2rem;">
+                    <h3>Citas del Día</h3>
+                    <div id="pacienteListaCitasDia">
+                        <p class="text-muted">Seleccione un día en el calendario para ver detalles.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-vista: Historia Clínica -->
+            <div id="pacienteHistoriaView" style="display: none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <span class="section-icon">📄</span>
+                        <h2 class="section-title">Mi Historia Clínica</h2>
+                    </div>
+                    <div id="historiaClinica">
+                        <div class="loading">Cargando historia clínica...</div>
+                    </div>
+                </div>
+            </div>
+
+          </div>
+
         </div>
       </main>
     </div>
 
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
 
+    <script src="dashboard-logic.js"></script>
     <script>
-      // Cargar información del usuario desde localStorage
-      const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-      const userRole = localStorage.getItem("userRole") || "Usuario";
-      const userName = localStorage.getItem("userName") || "Usuario";
-
-      // Verificar si hay sesión
-      // dashboard.html (dentro del script)
-
-      // Verificar si hay sesión
-      if (!usuario.idUsuario) {
-        // Cambia '/login' por 'login.html' para evitar errores de ruta
-        window.location.href = "login.html";
+      // Funciones auxiliares de UI y configuración que no están en logic.js
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("active");
       }
-
-      // Mostrar información del usuario
-      document.getElementById("userName").textContent = userName;
-      document.getElementById("userRole").textContent = userRole;
-
-      // Configuración de roles y menús
+      
+      // Menús por rol (Configuración)
       const roleMenus = {
+        Paciente: {
+            sections: [
+              {
+                title: "Mi Información",
+                items: [
+                  { icon: "📅", text: "Mis Citas", url: "javascript:switchPacienteView('citas')" }, 
+                  { icon: "📋", text: "Historia Clínica", url: "javascript:switchPacienteView('historia')" },
+                ],
+              },
+            ],
+          },
         Administrador: {
           sections: [
             {
@@ -355,11 +547,7 @@
               items: [
                 { icon: "🏥", text: "Sedes Hospitalarias", url: "sedes.html" },
                 { icon: "👥", text: "Pacientes", url: "pacientes.html" },
-                {
-                  icon: "🏢",
-                  text: "Departamentos",
-                  url: "departamentos.html",
-                },
+                { icon: "🏢", text: "Departamentos", url: "departamentos.html" },
                 { icon: "👨‍⚕️", text: "Empleados", url: "empleados.html" },
               ],
             },
@@ -375,11 +563,7 @@
             {
               title: "Auditoría",
               items: [
-                {
-                  icon: "🔍",
-                  text: "Auditoría de Accesos",
-                  url: "auditoria.html",
-                },
+                { icon: "🔍", text: "Auditoría de Accesos", url: "auditoria.html" },
                 { icon: "⚙️", text: "Equipamiento", url: "equipamientos.html" },
               ],
             },
@@ -390,11 +574,7 @@
             {
               title: "Atención Médica",
               items: [
-                {
-                  icon: "📋",
-                  text: "Historias Clínicas",
-                  url: "historias-clinicas.html",
-                },
+                { icon: "📋", text: "Historias Clínicas", url: "historias-clinicas.html" },
                 { icon: "📅", text: "Mis Citas", url: "citas.html" },
               ],
             },
@@ -424,11 +604,7 @@
             {
               title: "Equipamiento",
               items: [
-                {
-                  icon: "⚙️",
-                  text: "Equipamientos",
-                  url: "equipamientos.html",
-                },
+                { icon: "⚙️", text: "Equipamientos", url: "equipamientos.html" },
               ],
             },
           ],
@@ -439,101 +615,75 @@
               title: "Inventario",
               items: [
                 { icon: "💊", text: "Medicamentos", url: "medicamentos.html" },
-                {
-                  icon: "⚙️",
-                  text: "Equipamientos",
-                  url: "equipamientos.html",
-                },
+                { icon: "⚙️", text: "Equipamientos", url: "equipamientos.html" },
               ],
             },
           ],
         },
       };
 
-      // Cargar menú según el rol
+      // Función auxiliar para cargar menú, llamada por dashboard-logic.js si existe
       function loadMenuForRole(role) {
-        const menuConfig = roleMenus[role];
+        let menuConfig = roleMenus[role];
+        
+        // Mapeo flexible
+        if(!menuConfig) {
+            if(role === 'Médico') menuConfig = roleMenus['Medico'];
+            if(role === 'Tecnicomantenimiento') menuConfig = roleMenus['TecnicoMantenimiento'];
+            if(role === 'Asistentebodega') menuConfig = roleMenus['AsistenteBodega'];
+        }
+
         if (!menuConfig) {
           console.error("Rol no encontrado:", role);
           return;
         }
 
         const sidebarMenu = document.getElementById("sidebarMenu");
-        sidebarMenu.innerHTML = "";
+        if(sidebarMenu) {
+            sidebarMenu.innerHTML = "";
 
-        menuConfig.sections.forEach((section) => {
-          const sectionDiv = document.createElement("div");
-          sectionDiv.className = "menu-section";
+            menuConfig.sections.forEach((section) => {
+              const sectionDiv = document.createElement("div");
+              sectionDiv.className = "menu-section";
 
-          const sectionTitle = document.createElement("div");
-          sectionTitle.className = "menu-section-title";
-          sectionTitle.textContent = section.title;
-          sectionDiv.appendChild(sectionTitle);
+              const sectionTitle = document.createElement("div");
+              sectionTitle.className = "menu-section-title";
+              sectionTitle.textContent = section.title;
+              sectionDiv.appendChild(sectionTitle);
 
-          section.items.forEach((item) => {
-            const menuItem = document.createElement("a");
-            menuItem.className = "menu-item";
-            menuItem.href = item.url;
-            menuItem.innerHTML = `
-              <span class="menu-icon">${item.icon}</span>
-              <span>${item.text}</span>
-            `;
+              section.items.forEach((item) => {
+                const menuItem = document.createElement("a");
+                menuItem.className = "menu-item";
+                menuItem.href = item.url;
+                menuItem.innerHTML = `
+                  <span class="menu-icon">${item.icon}</span>
+                  <span>${item.text}</span>
+                `;
+                sectionDiv.appendChild(menuItem);
+              });
 
-            sectionDiv.appendChild(menuItem);
-          });
-
-          sidebarMenu.appendChild(sectionDiv);
-        });
+              sidebarMenu.appendChild(sectionDiv);
+            });
+        }
       }
-
-      function toggleSidebar() {
-        document.getElementById("sidebar").classList.toggle("active");
-      }
-
-      function updateDate() {
-        const now = new Date();
-        const options = {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        };
-        document.getElementById("currentDate").textContent =
-          now.toLocaleDateString("es-ES", options);
-      }
-
-      // Función de logout
+      
+      // Logout legacy
       async function logout() {
+        // Esta función podría ser redundante si logic.js maneja eventos, pero el botón onclick="logout()" en HTML llama a esto.
+        // Aseguramos que funcione.
         if (confirm("¿Está seguro de cerrar sesión?")) {
           try {
-            // Llamar al endpoint de logout (opcional)
             await fetch("http://localhost:8080/api/logout", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
             });
-          } catch (error) {
-            console.error("Error en logout:", error);
-          } finally {
-            // Limpiar localStorage
-            localStorage.removeItem("usuario");
-            localStorage.removeItem("userRole");
-            localStorage.removeItem("userName");
-            localStorage.removeItem("userId");
-            localStorage.removeItem("rememberMe");
-
-            // Redirigir al login
+          } catch (error) { console.error(error); } 
+          finally {
+            localStorage.clear();
             window.location.href = "login.html";
           }
         }
       }
-
-      // Inicializar
-      document.addEventListener("DOMContentLoaded", function () {
-        loadMenuForRole(userRole);
-        updateDate();
-      });
     </script>
   </body>
 </html>

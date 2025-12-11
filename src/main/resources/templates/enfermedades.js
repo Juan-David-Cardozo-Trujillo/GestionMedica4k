@@ -24,7 +24,9 @@ async function loadDiseases() {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         allDiseases = await response.json();
+
         renderDiseases(allDiseases);
+        await registrarAuditoria('SELECT', 'enfermedades');
     } catch (error) {
         console.error(error);
         showNotification('Error al cargar enfermedades', 'error');
@@ -37,26 +39,33 @@ function renderDiseases(diseases) {
 
     const userRole = localStorage.getItem('userRole');
 
+    const actionsHeader = document.getElementById('actionsHeader');
+    if (userRole === 'Medico') {
+        if (actionsHeader) actionsHeader.style.display = 'none';
+    } else {
+        if (actionsHeader) actionsHeader.style.display = '';
+    }
+
     diseases.forEach(disease => {
         let acciones = '';
+        let actionsCell = '';
+
         if (userRole !== 'Medico') {
             acciones = `
                 <button class="btn-icon" onclick='editDisease(${JSON.stringify(disease)})'>✏️</button>
                 <button class="btn-icon" onclick="deleteDisease(${disease.idEnfermedad})">🗑️</button>
             `;
-        } else {
-            // Medico solo ve, no edita
-            acciones = `<span style="color: #999; font-size: 0.8em;">(Solo lectura)</span>`;
+            actionsCell = `<td>${acciones}</td>`;
         }
 
-        // CORRECCIÓN: Usar camelCase (idEnfermedad, nombreEnfermedad...)
-        // Java convierte automáticamente los atributos de la clase a JSON respetando mayúsculas/minúsculas
+        // Si es médico, no mostramos la celda de acciones en absoluto
+
         tbody.innerHTML += `
             <tr>
                 <td>${disease.idEnfermedad}</td>
                 <td>${disease.nombreEnfermedad}</td>
                 <td>${disease.descripcionEnfermedad}</td>
-                <td>${acciones}</td>
+                ${actionsCell}
             </tr>
         `;
     });

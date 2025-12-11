@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -169,6 +170,93 @@ public class HistoriaClinicaController {
         response.put("medicamentos", medicamentos);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET BY PACIENTE - Obtener historias verificando la relación
+     */
+    @GetMapping("/paciente/{codPaciente}")
+    public ResponseEntity<Map<String, Object>> getHistoriaByPaciente(@PathVariable Integer codPaciente) {
+        try {
+            // Buscar todas las historias y filtrar (o usar un método de repositorio personalizado si existe)
+            // Asumimos que un paciente tiene UNA sola historia clínica principal activa, o devolvemos todas
+            List<HistoriaClinica> todas = historiaRepository.findAll();
+            
+            // Filtrar por paciente
+            List<HistoriaClinica> historiasPaciente = new ArrayList<>();
+            for (HistoriaClinica hc : todas) {
+                if (hc.getPaciente() != null && hc.getPaciente().getCodPaciente().equals(codPaciente)) {
+                    historiasPaciente.add(hc);
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            
+            if (historiasPaciente.isEmpty()) {
+                response.put("success", false);
+                response.put("mensaje", "No se encontró historia clínica para este paciente");
+                // Retornamos OK con success false para que el front no explote con 404
+                return ResponseEntity.ok(response);
+            }
+            
+            // Convertir a estructura de respuesta
+            List<Map<String, Object>> historiasList = new ArrayList<>();
+            
+            for (HistoriaClinica h : historiasPaciente) {
+                Map<String, Object> hMap = new HashMap<>();
+                hMap.put("codHistoria", h.getCodHistoria());
+                // hMap.put("fechaAtencion", h.getFechaAtencion() != null ? h.getFechaAtencion().toString() : null);
+                // hMap.put("detalles", h.getDetalles());
+                
+                // Diagnósticos desde Citas
+                List<com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad> registrosDiag = 
+                    citaDiagnosticaRepository.findByCitaPacienteCodPaciente(codPaciente);
+
+                List<Map<String, Object>> diagnosticos = new ArrayList<>();
+                for (com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad registro : registrosDiag) {
+                    Map<String, Object> diagMap = new HashMap<>();
+                    if (registro.getEnfermedad() != null) {
+                         diagMap.put("nombreEnfermedad", registro.getEnfermedad().getNombreEnfermedad());
+                         diagMap.put("descripcionEnfermedad", registro.getEnfermedad().getDescripcionEnfermedad());
+                    }
+                    diagnosticos.add(diagMap);
+                }
+                hMap.put("diagnosticos", diagnosticos);
+
+                // Medicamentos desde Citas (NUEVO)
+                List<com.gestion_medica.demo.model.CitaPrescribeMedicamento> registrosMed = 
+                    prescribeMedicamentoRepository.findByCitaPacienteCodPaciente(codPaciente);
+                
+                List<Map<String, Object>> medicamentos = new ArrayList<>();
+                for (com.gestion_medica.demo.model.CitaPrescribeMedicamento reg : registrosMed) {
+                    Map<String, Object> medMap = new HashMap<>();
+                    medMap.put("dosis", reg.getDosis());
+                    medMap.put("frecuencia", reg.getFrecuencia());
+                    medMap.put("duracion", reg.getDuracion());
+                    
+                    if (reg.getMedicamento() != null) {
+                        medMap.put("nombreMedicamento", reg.getMedicamento().getNombreMed());
+                        medMap.put("descripcionMedicamento", reg.getMedicamento().getDescripcion());
+                    }
+                    if (reg.getCita() != null) {
+                        medMap.put("fechaPrescripcion", reg.getCita().getFecha());
+                    }
+                    medicamentos.add(medMap);
+                }
+                hMap.put("medicamentos", medicamentos);
+                
+                historiasList.add(hMap);
+            }
+            
+            response.put("success", true);
+            response.put("historias", historiasList);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**

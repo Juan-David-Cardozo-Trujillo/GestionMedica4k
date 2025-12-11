@@ -1,38 +1,43 @@
-// reportes.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8080/api';
 let currentReporte = null;
 
 // Configuración de reportes
 const reportesConfig = {
     medicamentos: {
         title: '💊 Medicamentos Más Recetados por Sede',
-        endpoint: '/reportes/medicamentos-recetados',
-        columns: ['Sede', 'Medicamento', 'Total Recetas']
+        endpoint: '/reports/medicamentos-top-sede',
+        columns: ['Sede', 'Medicamento', 'Total Recetas'],
+        keys: ['nombreSede', 'nombreMed', 'totalRecetas']
     },
     medicos: {
         title: '👨‍⚕️ Médicos con Más Consultas por Semana',
-        endpoint: '/reportes/medicos-consultas',
-        columns: ['Nombre', 'Apellido', 'Semana', 'Total Consultas']
+        endpoint: '/reports/medicos-top-semana',
+        columns: ['Nombre', 'Apellido', 'Semana', 'Total Consultas'],
+        keys: ['nombrePersona', 'apellidoPersona', 'semana', 'totalConsultas']
     },
     tiempo: {
         title: '⏱️ Tiempo Promedio entre Cita y Diagnóstico',
-        endpoint: '/reportes/tiempo-promedio',
-        columns: ['Promedio (días)']
+        endpoint: '/reports/tiempo-promedio',
+        columns: ['Promedio (días)'],
+        keys: ['promedio_duracion']
     },
     auditoria: {
         title: '🔍 Últimas Auditorías de Historias Clínicas',
-        endpoint: '/reportes/auditoria',
-        columns: ['Evento ID', 'Fecha', 'Usuario', 'Acción', 'Tabla', 'IP']
+        endpoint: '/reports/auditoria-historias',
+        columns: ['ID', 'Fecha', 'Acción', 'Usuario'],
+        keys: ['idEvento', 'fechaEvento', 'accion', 'nombreUsuario']
     },
     equipamiento: {
         title: '⚙️ Departamentos que Comparten Equipamiento',
-        endpoint: '/reportes/departamentos-equipamiento',
-        columns: ['Sede', 'Departamento', 'Código Equipo']
+        endpoint: '/reports/equipamiento-compartido',
+        columns: ['Sede', 'Departamento', 'Código Equipo', 'Nombre Equipo'],
+        keys: ['idSede', 'nombreDepartamento', 'codEquip', 'nombreEquip']
     },
     enfermedades: {
         title: '🦠 Pacientes por Enfermedad y Sede',
-        endpoint: '/reportes/pacientes-enfermedad',
-        columns: ['Sede', 'Enfermedad', 'Total Pacientes']
+        endpoint: '/reports/enfermedades-sede',
+        columns: ['Sede', 'Enfermedad', 'Total Pacientes'],
+        keys: ['nombreSede', 'nombreEnfermedad', 'totalPacientes']
     }
 };
 
@@ -40,18 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarSedes();
 });
 
-// Cargar sedes para filtros
+// Cargar sedes para filtros y formulario
 async function cargarSedes() {
     try {
         const response = await fetch(`${API_URL}/sedes`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const sedes = await response.json();
-        
-        const select = document.getElementById('sedeFilter');
-        sedes.forEach(sede => {
-            select.innerHTML += `<option value="${sede.idsede}">${sede.nombresede}</option>`;
-        });
+
+        // Poblar filtro
+        const selectFilter = document.getElementById('sedeFilter');
+        if (selectFilter) {
+            sedes.forEach(sede => {
+                selectFilter.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
+            });
+        }
+
+        // Poblar select de reporte manual
+        const selectReporte = document.getElementById('idSedeReporte');
+        if (selectReporte) {
+            sedes.forEach(sede => {
+                selectReporte.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
+            });
+        }
     } catch (error) {
         console.error('Error:', error);
     }
@@ -61,42 +77,35 @@ async function cargarSedes() {
 async function loadReporte(tipo) {
     const config = reportesConfig[tipo];
     if (!config) return;
-    
+
     currentReporte = tipo;
-    
+
     // Mostrar área de resultados
     document.getElementById('resultadosArea').style.display = 'block';
     document.getElementById('reporteTitle').textContent = config.title;
     document.getElementById('loading').style.display = 'block';
     document.getElementById('reporteContent').innerHTML = '';
-    
+
     // Scroll al área de resultados
     document.getElementById('resultadosArea').scrollIntoView({ behavior: 'smooth' });
-    
+
     try {
         const response = await fetch(`${API_URL}${config.endpoint}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) throw new Error('Error al cargar reporte');
-        
+
         const datos = await response.json();
-        
+
         // Ocultar loading
         document.getElementById('loading').style.display = 'none';
-        
-        // Renderizar según tipo de reporte
-        switch(tipo) {
-            case 'tiempo':
-                renderTiempoPromedio(datos);
-                break;
-            case 'medicamentos':
-            case 'medicos':
-            case 'enfermedades':
-                renderReporteConGrafica(datos, config);
-                break;
-            default:
-                renderReporteTabla(datos, config);
+
+        // Renderizar siempre como tabla
+        if (tipo === 'tiempo') {
+            renderTiempoPromedio(datos);
+        } else {
+            renderReporteTabla(datos, config);
         }
     } catch (error) {
         console.error('Error:', error);
@@ -110,7 +119,7 @@ function renderTiempoPromedio(datos) {
     const promedio = datos.promedio_duracion || 0;
     const dias = Math.floor(promedio);
     const horas = Math.round((promedio - dias) * 24);
-    
+
     document.getElementById('reporteContent').innerHTML = `
         <div class="resultado-destacado">
             <p>Tiempo Promedio entre Cita y Diagnóstico</p>
@@ -135,36 +144,8 @@ function renderTiempoPromedio(datos) {
     `;
 }
 
-// Renderizar reporte con gráfica
-function renderReporteConGrafica(datos, config) {
-    if (!datos || datos.length === 0) {
-        mostrarEmpty();
-        return;
-    }
-    
-    const maxValue = Math.max(...datos.map(d => parseInt(Object.values(d)[Object.values(d).length - 1])));
-    
-    let chartHTML = '<div class="chart-container"><h3>Visualización de Datos</h3><div class="simple-chart">';
-    
-    datos.slice(0, 10).forEach(item => {
-        const values = Object.values(item);
-        const label = values[0] || 'N/A';
-        const value = parseInt(values[values.length - 1]) || 0;
-        const height = (value / maxValue) * 250;
-        
-        chartHTML += `
-            <div class="chart-bar" style="height: ${height}px;">
-                <div class="chart-bar-value">${value}</div>
-                <div class="chart-bar-label">${label}</div>
-            </div>
-        `;
-    });
-    
-    chartHTML += '</div></div>';
-    
-    document.getElementById('reporteContent').innerHTML = chartHTML + 
-        renderTabla(datos, config);
-}
+// Función renderReporteConGrafica eliminada por solicitud del usuario
+
 
 // Renderizar reporte tabla
 function renderReporteTabla(datos, config) {
@@ -172,19 +153,14 @@ function renderReporteTabla(datos, config) {
         mostrarEmpty();
         return;
     }
-    
+
     document.getElementById('reporteContent').innerHTML = renderTabla(datos, config);
 }
 
 // Renderizar tabla
 function renderTabla(datos, config) {
     let tableHTML = `
-        <div class="reporte-stats">
-            <div class="stat-box">
-                <div class="number">${datos.length}</div>
-                <div class="label">Total Registros</div>
-            </div>
-        </div>
+
         <table class="reporte-table">
             <thead>
                 <tr>
@@ -193,17 +169,24 @@ function renderTabla(datos, config) {
             </thead>
             <tbody>
     `;
-    
+
     datos.forEach(row => {
         tableHTML += '<tr>';
-        Object.values(row).forEach(value => {
-            tableHTML += `<td>${value || 'N/A'}</td>`;
-        });
+        // Use explicitly defined keys to ensure order
+        if (config.keys) {
+            config.keys.forEach(key => {
+                tableHTML += `<td>${row[key] !== undefined && row[key] !== null ? row[key] : 'N/A'}</td>`;
+            });
+        } else {
+            Object.values(row).forEach(value => {
+                tableHTML += `<td>${value || 'N/A'}</td>`;
+            });
+        }
         tableHTML += '</tr>';
     });
-    
+
     tableHTML += '</tbody></table>';
-    
+
     return tableHTML;
 }
 
@@ -239,44 +222,44 @@ function cerrarReporte() {
 // Exportar todos los reportes
 async function exportarTodos() {
     if (!confirm('¿Desea exportar todos los reportes a CSV?')) return;
-    
+
     for (const [tipo, config] of Object.entries(reportesConfig)) {
         try {
             const response = await fetch(`${API_URL}${config.endpoint}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
-            
+
             const datos = await response.json();
             exportarCSV(datos, config.title, config.columns);
-            
+
             // Esperar un poco entre exportaciones
             await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
             console.error(`Error exportando ${tipo}:`, error);
         }
     }
-    
+
     alert('Exportación completada');
 }
 
 // Exportar a CSV
 function exportarCSV(datos, titulo, columnas) {
     if (!datos || datos.length === 0) return;
-    
+
     let csv = '\ufeff'; // BOM para UTF-8
     csv += columnas.join(',') + '\n';
-    
+
     datos.forEach(row => {
         const values = Object.values(row).map(v => `"${v}"`);
         csv += values.join(',') + '\n';
     });
-    
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     const filename = `${titulo.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
@@ -300,15 +283,66 @@ function aplicarFiltros() {
     const fechaDesde = document.getElementById('fechaDesde').value;
     const fechaHasta = document.getElementById('fechaHasta').value;
     const sede = document.getElementById('sedeFilter').value;
-    
+
     // Recargar reporte con filtros
     if (currentReporte) {
         // Aquí se implementaría la lógica de filtrado
         // Por ahora solo recargamos el reporte
         loadReporte(currentReporte);
     }
-    
+
     cerrarFiltros();
+}
+
+// FUNCIONES PARA REPORTE MANUAL
+function openCrearReporteModal() {
+    document.getElementById('crearReporteModal').style.display = 'block';
+    document.getElementById('crearReporteForm').reset();
+}
+
+function closeCrearReporteModal() {
+    document.getElementById('crearReporteModal').style.display = 'none';
+}
+
+async function saveReporteMedico(event) {
+    event.preventDefault();
+
+    const idSede = parseInt(document.getElementById('idSedeReporte').value);
+    const tipoReporte = document.getElementById('tipoReporte').value;
+    const resumen = document.getElementById('resumenReporte').value;
+
+    if (!idSede || !tipoReporte || !resumen) {
+        showNotification('Por favor complete todos los campos', 'error');
+        return;
+    }
+
+    const data = {
+        idSede: idSede,
+        tipoReporte: tipoReporte,
+        resumen: resumen
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/reports/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorMsg = await response.text();
+            throw new Error(errorMsg || 'Error al guardar reporte');
+        }
+
+        showNotification('Reporte creado correctamente', 'success');
+        closeCrearReporteModal();
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al crear reporte', 'error');
+    }
 }
 
 // Notificación
@@ -324,13 +358,13 @@ function showNotification(message, type) {
         color: white;
         font-weight: 600;
         z-index: 10000;
-        background: ${type === 'success' ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' : 
-                                           'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'};
+        background: ${type === 'success' ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' :
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'};
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         animation: slideInRight 0.3s ease;
     `;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
     setTimeout(() => {
         notification.style.animation = 'slideOutRight 0.3s ease';

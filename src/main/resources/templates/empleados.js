@@ -19,7 +19,9 @@ async function loadEmployees() {
         });
         if (!response.ok) throw new Error('Error de red');
         allEmployees = await response.json();
+
         renderEmployees(allEmployees);
+        await registrarAuditoria('SELECT', 'empleados');
     } catch (error) {
         console.error(error);
         showNotification('Error al cargar empleados', 'error');
@@ -46,10 +48,10 @@ async function loadDepartamentos(idSede) {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const allDepts = await response.json();
-        
-       
+
+
         departamentos = allDepts.filter(d => d.idSede == idSede);
-        
+
         populateDepartamentoSelect();
     } catch (error) {
         console.error('Error:', error);
@@ -62,13 +64,13 @@ async function loadDepartamentos(idSede) {
 function populateSedeSelect() {
     const select = document.getElementById('idSede');
     select.innerHTML = '<option value="">Seleccione</option>';
-    
+
     sedes.forEach(sede => {
-        
+
         select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
     });
-    
-    select.onchange = function() {
+
+    select.onchange = function () {
         if (this.value) {
             loadDepartamentos(this.value);
         } else {
@@ -82,7 +84,7 @@ function populateDepartamentoSelect() {
     const select = document.getElementById('nombreDepartamento');
     select.innerHTML = '<option value="">Seleccione</option>';
     departamentos.forEach(dept => {
-        
+
         select.innerHTML += `<option value="${dept.nombreDepartamento}">${dept.nombreDepartamento}</option>`;
     });
 }
@@ -92,7 +94,7 @@ function populateFilterSedeSelect() {
     const select = document.getElementById('filterSede');
     select.innerHTML = '<option value="">Todas las sedes</option>';
     sedes.forEach(sede => {
-       
+
         select.innerHTML += `<option value="${sede.idSede}">${sede.nombreSede}</option>`;
     });
 }
@@ -100,7 +102,7 @@ function populateFilterSedeSelect() {
 function renderEmployees(employees) {
     const tbody = document.getElementById('employeesBody');
     tbody.innerHTML = '';
-    
+
     employees.forEach(emp => {
         // VALIDACIÓN DE NULOS Y CAMEL CASE
         // Java devuelve: { persona: { nombrePersona: "..." }, numDocumento: 123 }
@@ -139,11 +141,11 @@ function renderEmployees(employees) {
 function openModal(employee = null) {
     const modal = document.getElementById('employeeModal');
     const form = document.getElementById('employeeForm');
-    
+
     if (employee) {
         currentEmployee = employee;
         document.getElementById('modalTitle').textContent = 'Editar Empleado';
-        
+
         // Llenar datos de Persona (usando camelCase)
         if (employee.persona) {
             document.getElementById('numDocumento').value = employee.numDocumento;
@@ -157,12 +159,12 @@ function openModal(employee = null) {
 
         // Llenar datos de Empleado
         document.getElementById('cargo').value = employee.cargo;
-        
+
         // Lógica para cargar Sede y Departamento en cascada
         if (employee.departamento) {
             const idSede = employee.departamento.idsede;
             document.getElementById('idSede').value = idSede;
-            
+
             // Cargar departamentos de esa sede y luego seleccionar el correcto
             loadDepartamentos(idSede).then(() => {
                 document.getElementById('nombreDepartamento').value = employee.departamento.nombreDepartamento;
@@ -174,7 +176,7 @@ function openModal(employee = null) {
         document.getElementById('modalTitle').textContent = 'Nuevo Empleado';
         document.getElementById('nombreDepartamento').innerHTML = ''; // Limpiar depto
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -194,7 +196,7 @@ async function saveEmployee(event) {
     event.preventDefault();
 
     const esNuevo = !currentEmployee; // Determinar si es INSERT o UPDATE
-    
+
     // Recogemos los datos del formulario
     const data = {
         persona: {
@@ -213,7 +215,7 @@ async function saveEmployee(event) {
             nombreDepartamento: document.getElementById('nombreDepartamento').value
         }
     };
-    
+
     try {
         let url, method;
 
@@ -228,7 +230,7 @@ async function saveEmployee(event) {
             url = `${API_URL}/empleados`;
             method = 'POST';
         }
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -237,7 +239,7 @@ async function saveEmployee(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(errorText);
@@ -245,7 +247,7 @@ async function saveEmployee(event) {
 
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'empleados');
-        
+
         showNotification(currentEmployee ? 'Empleado actualizado' : 'Empleado creado', 'success');
         closeModal();
         loadEmployees();
@@ -259,17 +261,17 @@ async function saveEmployee(event) {
 
 async function deleteEmployee(idEmpleado, numDocumento) {
     if (!confirm('¿Eliminar este empleado?')) return;
-    
+
     try {
         // La URL coincide con @DeleteMapping("/{idEmpleado}") y @RequestParam("numDocumento")
         const response = await fetch(`${API_URL}/empleados/${idEmpleado}?numDocumento=${numDocumento}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) {
-             const errorText = await response.text();
-             throw new Error(errorText);
+            const errorText = await response.text();
+            throw new Error(errorText);
         }
 
         await registrarAuditoria('DELETE', 'empleados');
@@ -286,7 +288,7 @@ function filterEmployees() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const cargo = document.getElementById('filterCargo').value;
     const sede = document.getElementById('filterSede').value;
-    
+
     const filtered = allEmployees.filter(emp => {
         // 1. Extraer datos de forma segura (validando nulos)
         // OJO: Usar camelCase (nombrePersona) tal como viene del backend
@@ -297,42 +299,22 @@ function filterEmployees() {
 
         // 2. Lógica de coincidencia
         // Buscamos por Nombre, Apellido O Número de Documento
-        const matchSearch = nombre.includes(search) || 
-                          apellido.includes(search) || 
-                          numDoc.includes(search);
+        const matchSearch = nombre.includes(search) ||
+            apellido.includes(search) ||
+            numDoc.includes(search);
 
         const matchCargo = !cargo || emp.cargo === cargo;
-        
+
         // El filtro de sede compara IDs (convertimos a string para asegurar)
         const matchSede = !sede || empSedeId.toString() === sede.toString();
-        
+
         return matchSearch && matchCargo && matchSede;
     });
-    
+
     renderEmployees(filtered);
 }
 
-async function registrarAuditoria(accion, tabla) {
-    try {
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        
-        await fetch(`${API_URL}/auditoria/registrar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                accion: accion,
-                tabla: tabla,
-                ipOrigen: 'Web-Client',
-                idUsuario: usuario.idUsuario || null
-            })
-        });
-    } catch (error) {
-        console.error('Error al registrar auditoría:', error);
-    }
-}
+// La función registrarAuditoria se importa desde auditoria-helper.js
 
 function showNotification(message, type) {
     const notification = document.createElement('div');

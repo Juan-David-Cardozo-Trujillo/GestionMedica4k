@@ -15,13 +15,13 @@ async function loadSedes() {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         if (!response.ok) throw new Error('Error al cargar sedes');
-        
+
         allSedes = await response.json();
         console.log('✅ Sedes cargadas:', allSedes); // Debug
         renderSedesGrid(allSedes);
-        updateStats();
+        renderSedesGrid(allSedes);
     } catch (error) {
         console.error('❌ Error al cargar sedes:', error);
         showNotification('Error al cargar las sedes hospitalarias', 'error');
@@ -32,7 +32,7 @@ async function loadSedes() {
 function renderSedesGrid(sedes) {
     const grid = document.getElementById('sedesGrid');
     grid.innerHTML = '';
-    
+
     if (sedes.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -42,15 +42,15 @@ function renderSedesGrid(sedes) {
         `;
         return;
     }
-    
+
     sedes.forEach(sede => {
         const card = document.createElement('div');
         card.className = 'sede-card';
-        
+
         // ✅ CORRECCIÓN: Usar camelCase
         const nombreSede = sede.nombreSede || 'Sin nombre';
         const idSede = sede.idSede || '';
-        
+
         card.innerHTML = `
             <div class="sede-card-icon">🏥</div>
             <h3>${nombreSede}</h3>
@@ -65,10 +65,7 @@ function renderSedesGrid(sedes) {
     });
 }
 
-// ========== ACTUALIZAR ESTADÍSTICAS ==========
-function updateStats() {
-    document.getElementById('totalSedes').textContent = allSedes.length;
-}
+
 
 // ========== ABRIR MODAL EDITAR ==========
 function openEditModal(idSede, nombreSede) {
@@ -86,15 +83,15 @@ function closeModal() {
 // ========== ACTUALIZAR SEDE ==========
 async function updateSede(event) {
     event.preventDefault();
-    
+
     const idSede = document.getElementById('idSede').value;
     const nombreSede = document.getElementById('nombreSede').value.trim();
-    
+
     if (!nombreSede) {
         showNotification('El nombre de la sede es obligatorio', 'error');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}/sedes/${idSede}`, {
             method: 'PUT',
@@ -102,24 +99,24 @@ async function updateSede(event) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
-            body: JSON.stringify({ 
-                idSede: parseInt(idSede), 
-                nombreSede: nombreSede 
+            body: JSON.stringify({
+                idSede: parseInt(idSede),
+                nombreSede: nombreSede
             })
         });
-        
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.mensaje || 'Error al actualizar');
         }
-        
+
         showNotification('Sede actualizada correctamente', 'success');
         closeModal();
         loadSedes();
-        
+
         // Registrar auditoría
         await registrarAuditoria('UPDATE', 'sedes_hospitalarias');
-        
+
     } catch (error) {
         console.error('Error:', error);
         showNotification(error.message || 'Error al actualizar la sede', 'error');
@@ -129,15 +126,15 @@ async function updateSede(event) {
 // ========== FILTRAR SEDES ==========
 function filterSedes() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    
+
     const filtered = allSedes.filter(sede => {
         // ✅ CORRECCIÓN: Usar camelCase
         const nombreSede = (sede.nombreSede || '').toLowerCase();
         const idSede = (sede.idSede || '').toString();
-        
+
         return nombreSede.includes(search) || idSede.includes(search);
     });
-    
+
     renderSedesGrid(filtered);
 }
 
@@ -146,13 +143,13 @@ function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.add('show');
     }, 100);
-    
+
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -164,7 +161,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ========== CERRAR MODAL AL HACER CLIC FUERA ==========
-window.onclick = function(event) {
+window.onclick = function (event) {
     const modal = document.getElementById('sedeModal');
     if (event.target === modal) {
         closeModal();

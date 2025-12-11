@@ -20,33 +20,12 @@
             </div>
         </header>
 
+
+
+
         <div class="filters">
             <input type="text" id="searchInput" placeholder="🔍 Buscar medicamento..." 
                    oninput="filterMedicamentos()">
-            <select id="filterStock" onchange="filterMedicamentos()">
-                <option value="">Todos</option>
-                <option value="bajo">Stock Bajo (< 50)</option>
-                <option value="medio">Stock Medio (50-200)</option>
-                <option value="alto">Stock Alto (> 200)</option>
-            </select>
-            <select id="filterProveedor" onchange="filterMedicamentos()">
-                <option value="">Todos los proveedores</option>
-            </select>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalMedicamentos">0</div>
-                <div class="stat-label">Total Medicamentos</div>
-            </div>
-            <div class="stat-card warning">
-                <div class="stat-number" id="stockBajo">0</div>
-                <div class="stat-label">Stock Bajo</div>
-            </div>
-            <div class="stat-card success">
-                <div class="stat-number" id="disponibles">0</div>
-                <div class="stat-label">Disponibles</div>
-            </div>
         </div>
 
         <div class="table-container">

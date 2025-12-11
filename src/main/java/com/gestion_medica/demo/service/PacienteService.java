@@ -31,4 +31,8 @@ public class PacienteService {
     public void deleteById(PacienteId id) {
         repository.deleteById(id);
     }
+    
+    public Paciente findByNumDocumento(Integer numDocumento) {
+        return repository.findByNumDocumento(numDocumento);
+    }
 }

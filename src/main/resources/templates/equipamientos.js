@@ -67,7 +67,9 @@ async function loadEquipamientos() {
 
         allEquipamientos = await response.json();
         renderEquipamientos(allEquipamientos);
+        renderEquipamientos(allEquipamientos);
         updateStats();
+        await registrarAuditoria('SELECT', 'equipamientos');
     } catch (error) {
         console.error('Error:', error);
         showNotification('Error al cargar equipamientos', 'error');
@@ -94,7 +96,7 @@ function populateSedesSelect() {
 
     select.innerHTML = '<option value="">Seleccione sede</option>';
     sedes.forEach(s => {
-        select.innerHTML += `<option value="${s.idsede}">${s.nombresede}</option>`;
+        select.innerHTML += `<option value="${s.idSede}">${s.nombreSede}</option>`;
     });
 }
 
@@ -126,8 +128,8 @@ async function loadDepartamentosSede() {
 
         departamentos.forEach(d => {
             select.innerHTML += `
-                <option value="${d.nombredepartamento}">
-                    ${d.nombredepartamento}
+                <option value="${d.nombreDepartamento}">
+                    ${d.nombreDepartamento}
                 </option>
             `;
         });
@@ -390,8 +392,8 @@ async function loadDepartamentosAsignados(codEquip) {
         depts.forEach(dept => {
             container.innerHTML += `
                 <div class="diagnostico-item">
-                    <strong>${dept.nombredepartamento}</strong>
-                    <p>Sede: ${dept.nombresede || 'N/A'}</p>
+                    <strong>${dept.nombreDepartamento}</strong>
+                    <p>Sede: ${dept.nombreSede || 'N/A'}</p>
                 </div>
             `;
         });
@@ -523,23 +525,12 @@ async function deleteEquipamiento(codEquip) {
 // Filtrar equipamientos
 function filterEquipamientos() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const estadoFilter = document.getElementById('filterEstado').value;
-    const fechaFilter = document.getElementById('filterFecha').value;
 
     const filtered = allEquipamientos.filter(equip => {
         const matchSearch = equip.nombreEquip.toLowerCase().includes(search) ||
             equip.codEquip.toString().includes(search);
-        const matchEstado = !estadoFilter || equip.estado === estadoFilter;
-
-        let matchFecha = true;
-        if (fechaFilter) {
-            const fechaMant = new Date(equip.fechaMantenimiento);
-            const filterDate = new Date(fechaFilter);
-            matchFecha = fechaMant.getMonth() === filterDate.getMonth() &&
-                fechaMant.getFullYear() === filterDate.getFullYear();
-        }
-
-        return matchSearch && matchEstado && matchFecha;
+        
+        return matchSearch;
     });
 
     renderEquipamientos(filtered);

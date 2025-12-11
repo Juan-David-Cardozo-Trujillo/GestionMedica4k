@@ -38,8 +38,8 @@ async function loadMedicamentos() {
 
         allMedicamentos = await response.json();
         renderMedicamentos(allMedicamentos);
-        updateStats();
-        populateProveedorFilter();
+        renderMedicamentos(allMedicamentos);
+        await registrarAuditoria('SELECT', 'medicamentos');
     } catch (error) {
         console.error('Error:', error);
         showNotification('Error al cargar medicamentos', 'error');
@@ -87,23 +87,9 @@ function renderMedicamentos(medicamentos) {
     });
 }
 
-// Actualizar estadísticas
-function updateStats() {
-    document.getElementById('totalMedicamentos').textContent = allMedicamentos.length;
-    document.getElementById('stockBajo').textContent =
-        allMedicamentos.filter(m => m.stock < 50).length;
-    document.getElementById('disponibles').textContent =
-        allMedicamentos.filter(m => m.stock > 0).length;
-}
 
-// Poblar filtro de proveedores
-function populateProveedorFilter() {
-    const proveedores = [...new Set(allMedicamentos.map(m => m.proveedor))];
-    const select = document.getElementById('filterProveedor');
-    proveedores.forEach(p => {
-        select.innerHTML += `<option value="${p}">${p}</option>`;
-    });
-}
+
+
 
 // Abrir modal
 function openModal(medicamento = null) {
@@ -309,25 +295,17 @@ async function deleteMedicamento(codMed) {
     }
 }
 
+
+
+
 // Filtrar medicamentos
 function filterMedicamentos() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const stockFilter = document.getElementById('filterStock').value;
-    const proveedorFilter = document.getElementById('filterProveedor').value;
 
     const filtered = allMedicamentos.filter(med => {
-        const matchSearch = med.nombreMed.toLowerCase().includes(search) ||
+        return med.nombreMed.toLowerCase().includes(search) ||
             med.descripcion.toLowerCase().includes(search) ||
             med.codMed.toString().includes(search);
-
-        let matchStock = true;
-        if (stockFilter === 'bajo') matchStock = med.stock < 50;
-        if (stockFilter === 'medio') matchStock = med.stock >= 50 && med.stock <= 200;
-        if (stockFilter === 'alto') matchStock = med.stock > 200;
-
-        const matchProveedor = !proveedorFilter || med.proveedor === proveedorFilter;
-
-        return matchSearch && matchStock && matchProveedor;
     });
 
     renderMedicamentos(filtered);

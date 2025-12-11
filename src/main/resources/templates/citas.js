@@ -5,7 +5,7 @@ let allAppointments = [];
 let patients = [];
 let doctors = [];
 let currentDate = new Date();
-let viewMode = 'calendar'; // 'calendar' o 'list'
+let viewMode = 'list'; // 'list' only
 
 // Meses en español
 const monthNames = [
@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAppointments();
     loadPatients();
     loadDoctors();
-    renderCalendar();
     setMinDate();
     checkPermissions();
 });
@@ -65,10 +64,12 @@ async function loadAppointments() {
         console.log('Datos de citas recibidos:', data);
 
         allAppointments = data;
-        if (viewMode === 'list') {
-            renderAppointmentsList(allAppointments);
-        }
-        renderCalendar();
+        // Always render list
+        renderAppointmentsList(allAppointments);
+
+        // Auditoría de Lectura
+        await registrarAuditoria('SELECT', 'citas');
+
     } catch (error) {
         console.error('Error detallado:', error);
         showNotification('Error al cargar las citas: ' + error.message, 'error');
@@ -78,16 +79,9 @@ async function loadAppointments() {
 // Cargar pacientes
 async function loadPatients() {
     try {
-        console.log('Cargando pacientes desde:', `${API_URL}/pacientes`);
         const response = await fetch(`${API_URL}/pacientes`);
-        console.log('Respuesta pacientes:', response.status);
-
-        if (!response.ok) {
-            throw new Error('Error al cargar pacientes');
-        }
-
+        if (!response.ok) throw new Error('Error al cargar pacientes');
         patients = await response.json();
-        console.log('Pacientes cargados:', patients.length);
         populatePatientSelect();
     } catch (error) {
         console.error('Error al cargar pacientes:', error);
@@ -98,27 +92,15 @@ async function loadPatients() {
 // Cargar médicos
 async function loadDoctors() {
     try {
-        console.log('Cargando empleados desde:', `${API_URL}/empleados`);
         const response = await fetch(`${API_URL}/empleados`);
-        console.log('Respuesta empleados:', response.status);
-
-        if (!response.ok) {
-            throw new Error('Error al cargar empleados');
-        }
-
+        if (!response.ok) throw new Error('Error al cargar empleados');
         const empleados = await response.json();
-        console.log('Empleados cargados:', empleados.length);
-        console.log('Empleados recibidos:', empleados);
-        // Filtrar solo los médicos (aceptar diferentes variaciones)
         doctors = empleados.filter(emp => emp.cargo && (
             emp.cargo.toLowerCase() === 'medico' ||
             emp.cargo.toLowerCase() === 'médico' ||
             emp.cargo.toLowerCase().includes('medic')
         ));
-        console.log('Médicos filtrados:', doctors.length);
-        console.log('Médicos:', doctors);
         populateDoctorSelect();
-        populateDoctorFilter();
     } catch (error) {
         console.error('Error al cargar médicos:', error);
         showNotification('Error al cargar médicos', 'error');
@@ -128,6 +110,7 @@ async function loadDoctors() {
 // Poblar select de pacientes
 function populatePatientSelect() {
     const select = document.getElementById('codPaciente');
+    if (!select) return;
     select.innerHTML = '<option value="">Seleccione un paciente</option>';
     patients.forEach(p => {
         select.innerHTML += `
@@ -141,173 +124,17 @@ function populatePatientSelect() {
 // Poblar select de médicos
 function populateDoctorSelect() {
     const select = document.getElementById('medico');
-    console.log('Poblando select de médicos, total:', doctors.length);
+    if (!select) return;
     select.innerHTML = '<option value="">Seleccione un médico</option>';
     doctors.forEach(d => {
-        console.log('Procesando médico:', d);
         const nombreCompleto = d.persona ? `${d.persona.nombrePersona || ''} ${d.persona.apellidoPersona || ''}`.trim() : 'Sin nombre';
         const departamento = d.departamento ? d.departamento.nombredepartamento : 'Sin departamento';
-        console.log('Nombre completo:', nombreCompleto, 'Departamento:', departamento);
         select.innerHTML += `
             <option value="${d.idEmpleado}" data-documento="${d.numDocumento}">
                 Dr(a). ${nombreCompleto} - ${departamento}
             </option>
         `;
     });
-    console.log('Select HTML final:', select.innerHTML);
-}
-
-// Poblar filtro de médicos
-function populateDoctorFilter() {
-    const select = document.getElementById('filterMedico');
-    doctors.forEach(d => {
-        const nombreCompleto = d.persona ? `${d.persona.nombrePersona || ''} ${d.persona.apellidoPersona || ''}`.trim() : 'Sin nombre';
-        select.innerHTML += `
-            <option value="${d.idEmpleado}">
-                Dr(a). ${nombreCompleto}
-            </option>
-        `;
-    });
-}
-
-// Renderizar calendario
-function renderCalendar() {
-    const calendar = document.getElementById('calendar');
-    const monthTitle = document.getElementById('currentMonth');
-
-    // Actualizar título
-    monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-
-    // Obtener primer y último día del mes
-    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const startingDayOfWeek = firstDay.getDay();
-    const totalDays = lastDay.getDate();
-
-    // Limpiar calendario
-    calendar.innerHTML = '';
-
-    // Encabezados de días
-    const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    dayHeaders.forEach(day => {
-        const header = document.createElement('div');
-        header.className = 'calendar-day-header';
-        header.textContent = day;
-        calendar.appendChild(header);
-    });
-
-    // Días vacíos antes del primer día
-    for (let i = 0; i < startingDayOfWeek; i++) {
-        const emptyDay = document.createElement('div');
-        emptyDay.className = 'calendar-day empty';
-        calendar.appendChild(emptyDay);
-    }
-
-    // Días del mes
-    for (let day = 1; day <= totalDays; day++) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day';
-
-        const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (currentDayDate.getTime() === today.getTime()) {
-            dayDiv.classList.add('today');
-        }
-
-        dayDiv.innerHTML = `<div class="day-number">${day}</div>`;
-
-        // Filtrar citas de este día
-        const dayAppointments = allAppointments.filter(apt => {
-            const aptDate = new Date(apt.fecha);
-            return aptDate.getDate() === day &&
-                aptDate.getMonth() === currentDate.getMonth() &&
-                aptDate.getFullYear() === currentDate.getFullYear();
-        });
-
-        // Agregar citas al día
-        if (dayAppointments.length > 0) {
-            const appointmentsContainer = document.createElement('div');
-            appointmentsContainer.className = 'day-appointments';
-
-            dayAppointments.slice(0, 3).forEach(apt => {
-                const pacienteNombre = apt.paciente && apt.paciente.nombrePersona
-                    ? apt.paciente.nombrePersona
-                    : 'Paciente';
-
-                const aptDiv = document.createElement('div');
-                aptDiv.className = `appointment-item ${apt.estado.toLowerCase()}`;
-                aptDiv.innerHTML = `
-                    <span class="apt-time">${apt.hora.substring(0, 5)}</span>
-                    <span class="apt-patient">${pacienteNombre}</span>
-                `;
-                aptDiv.onclick = (e) => {
-                    e.stopPropagation();
-                    showAppointmentDetails(apt.idcita);
-                };
-                appointmentsContainer.appendChild(aptDiv);
-            });
-
-            if (dayAppointments.length > 3) {
-                const moreDiv = document.createElement('div');
-                moreDiv.className = 'more-appointments';
-                moreDiv.textContent = `+${dayAppointments.length - 3} más`;
-                appointmentsContainer.appendChild(moreDiv);
-            }
-
-            dayDiv.appendChild(appointmentsContainer);
-        }
-
-        // Click en el día para crear cita (Solo si no es médico)
-        const role = localStorage.getItem('userRole');
-        if (role !== 'Medico' && role !== 'Médico') {
-            dayDiv.onclick = () => {
-                const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                const dateString = selectedDate.toISOString().split('T')[0];
-                document.getElementById('fecha').value = dateString;
-                openModal();
-            };
-            dayDiv.style.cursor = 'pointer';
-        } else {
-            dayDiv.style.cursor = 'default';
-        }
-
-        calendar.appendChild(dayDiv);
-    }
-}
-
-// Mes anterior
-function previousMonth() {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    renderCalendar();
-}
-
-// Mes siguiente
-function nextMonth() {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    renderCalendar();
-}
-
-// Cambiar vista
-function toggleView() {
-    viewMode = viewMode === 'calendar' ? 'list' : 'calendar';
-
-    const calendarView = document.getElementById('calendarView');
-    const listView = document.getElementById('listView');
-    const toggleText = document.getElementById('viewToggleText');
-
-    if (viewMode === 'calendar') {
-        calendarView.style.display = 'block';
-        listView.style.display = 'none';
-        toggleText.textContent = '📋 Ver Lista';
-        renderCalendar();
-    } else {
-        calendarView.style.display = 'none';
-        listView.style.display = 'block';
-        toggleText.textContent = '📅 Ver Calendario';
-        renderAppointmentsList(allAppointments);
-    }
 }
 
 // Renderizar lista de citas
@@ -644,8 +471,13 @@ async function saveDiagnosis(event) {
         }
 
         alert('Diagnóstico y prescripciones registrados correctamente');
+
+        // Registrar Auditoría
+        await registrarAuditoria('INSERT', 'historias_clinicas_registra_diagnostica');
+
         closeDiagnosisModal();
         loadAppointments();
+
 
     } catch (error) {
         console.error('Error:', error);
@@ -783,25 +615,21 @@ async function cancelAppointment() {
 // Filtrar citas
 function filterAppointments() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const estado = document.getElementById('filterEstado').value;
-    const fecha = document.getElementById('filterFecha').value;
-    const medico = document.getElementById('filterMedico').value;
 
     const filtered = allAppointments.filter(apt => {
         const pacienteNombre = apt.paciente && apt.paciente.nombrePersona && apt.paciente.apellidoPersona
             ? `${apt.paciente.nombrePersona} ${apt.paciente.apellidoPersona}`.toLowerCase()
             : '';
 
-        const medicoNombre = apt.medico && apt.medico.nombrepersona && apt.medico.apellidopersona
-            ? `${apt.medico.nombrepersona} ${apt.medico.apellidopersona}`.toLowerCase()
+        const medicoNombre = apt.medico && apt.medico.nombrePersona && apt.medico.apellidoPersona
+            ? `${apt.medico.nombrePersona} ${apt.medico.apellidoPersona}`.toLowerCase()
             : '';
 
-        const matchSearch = pacienteNombre.includes(search) || medicoNombre.includes(search);
-        const matchEstado = !estado || apt.estado === estado;
-        const matchFecha = !fecha || apt.fecha === fecha;
-        const matchMedico = !medico || (apt.medico && apt.medico.idempleado == medico);
+        const matchSearch = pacienteNombre.includes(search) ||
+            medicoNombre.includes(search) ||
+            apt.idcita.toString().includes(search);
 
-        return matchSearch && matchEstado && matchFecha && matchMedico;
+        return matchSearch;
     });
 
     renderAppointmentsList(filtered);

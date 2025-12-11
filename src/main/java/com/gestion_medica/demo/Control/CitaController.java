@@ -57,9 +57,84 @@ public class CitaController {
     @Autowired
     private com.gestion_medica.demo.repository.HistoriaClinicaRepository historiaClinicaRepository;
 
+    @Autowired
+    private com.gestion_medica.demo.repository.HistoriaClinicaRegistraDiagnosticaRepository historiaClinicaRegistraDiagnosticaRepository;
+
     /**
-     * GET ALL - Listar todas las citas, opcionalmente filtradas por médico
+     * POST - Registrar diagnóstico en una cita
      */
+    @PostMapping("/{idCita}/diagnostico")
+    public ResponseEntity<Map<String, Object>> registrarDiagnostico(
+            @PathVariable Integer idCita,
+            @RequestBody Map<String, Object> payload) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Integer idEnfermedad = Integer.parseInt(payload.get("idEnfermedad").toString());
+            
+            // Verificar existencia
+            Optional<Cita> citaOpt = citaService.findById(idCita);
+            if (citaOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Cita no encontrada");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            Cita cita = citaOpt.get();
+            
+            // Verificar enfermedad
+            Optional<com.gestion_medica.demo.model.Enfermedad> enfOpt = enfermedadRepository.findById(idEnfermedad);
+            if (enfOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Enfermedad no encontrada");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+            
+            // 1. Guardar en tabla intermedia Citas-Diagnostica
+            com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad registro = new com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad();
+            registro.setIdCita(idCita);
+            registro.setIdEnfermedad(idEnfermedad);
+            citaDiagnosticaEnfermedadRepository.save(registro);
+
+            // 2. Guardar en HistoriaClinicaRegistraDiagnostica (Requisito para reporte de tiempo y auditoría)
+            if (cita.getPaciente() != null) {
+                Optional<com.gestion_medica.demo.model.HistoriaClinica> historiaOpt = 
+                    historiaClinicaRepository.findByPacienteCodPaciente(cita.getPaciente().getCodPaciente());
+                
+                if (historiaOpt.isPresent()) {
+                     com.gestion_medica.demo.model.HistoriaClinicaRegistraDiagnostica registroHistoria = 
+                        new com.gestion_medica.demo.model.HistoriaClinicaRegistraDiagnostica();
+                     
+                     registroHistoria.setCodHistoria(historiaOpt.get().getCodHistoria());
+                     registroHistoria.setIdEnfermedad(idEnfermedad);
+                     registroHistoria.setIdCita(idCita);
+                     registroHistoria.setFechaRegistro(java.time.LocalDate.now());
+                     registroHistoria.setHoraRegistro(java.time.LocalTime.now());
+                     
+                     // Establecer relaciones si es necesario para JPA cascade
+                     registroHistoria.setHistoriaClinica(historiaOpt.get());
+                     registroHistoria.setEnfermedad(enfOpt.get());
+                     registroHistoria.setCita(cita);
+                     
+                     historiaClinicaRegistraDiagnosticaRepository.save(registroHistoria);
+                }
+            }
+            
+            // Actualizar estado de la cita a "Tomada"
+            cita.setEstado("Tomada");
+            citaService.save(cita);
+            
+            response.put("success", true);
+            response.put("message", "Diagnóstico registrado exitosamente en Historia Clínica");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error al registrar diagnóstico: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> getAllCitas(@org.springframework.web.bind.annotation.RequestParam(required = false) Integer idEmpleado) {
         try {
@@ -352,54 +427,7 @@ public class CitaController {
     /**
      * POST - Registrar diagnóstico en una cita
      */
-    @PostMapping("/{idCita}/diagnostico")
-    public ResponseEntity<Map<String, Object>> registrarDiagnostico(
-            @PathVariable Integer idCita,
-            @RequestBody Map<String, Object> payload) {
-        
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            Integer idEnfermedad = Integer.parseInt(payload.get("idEnfermedad").toString());
-            
-            // Verificar existencia
-            Optional<Cita> citaOpt = citaService.findById(idCita);
-            if (citaOpt.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Cita no encontrada");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-            }
-            
-            // Verificar enfermedad (opcional pero recomendado)
-            if (!enfermedadRepository.existsById(idEnfermedad)) {
-                response.put("success", false);
-                response.put("message", "Enfermedad no encontrada");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-            }
-            
-            // Crear registro
-            com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad registro = new com.gestion_medica.demo.model.CitaDiagnosticaEnfermedad();
-            registro.setIdCita(idCita);
-            registro.setIdEnfermedad(idEnfermedad);
-            
-            citaDiagnosticaEnfermedadRepository.save(registro);
-            
-            // Actualizar estado de la cita a "Tomada"
-            Cita cita = citaOpt.get();
-            cita.setEstado("Tomada");
-            citaService.save(cita);
-            
-            response.put("success", true);
-            response.put("message", "Diagnóstico registrado exitosamente");
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.put("success", false);
-            response.put("message", "Error al registrar diagnóstico: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
+
     /**
      * POST - Registrar prescripción para una cita
      */

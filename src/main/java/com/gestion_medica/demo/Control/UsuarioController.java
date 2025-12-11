@@ -138,13 +138,15 @@ public class UsuarioController {
 
             // Si el rol es Paciente, crear automáticamente el registro en la tabla pacientes
             String rol = (String) usuarioData.get("rol");
+            System.out.println("DEBUG: Rol recibido para usuario: " + rol);
+            
             if ("Paciente".equalsIgnoreCase(rol)) {
+                System.out.println("DEBUG: Entrando a bloque de creación de Paciente");
+                try {
                 String direccion = (String) data.get("direccion");
                 
                 if (direccion == null || direccion.trim().isEmpty()) {
-                    response.put("success", false);
-                    response.put("mensaje", "La dirección es requerida para pacientes");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                    direccion = "Sin registrar";
                 }
                 
                 Paciente paciente = new Paciente();
@@ -172,6 +174,12 @@ public class UsuarioController {
                     hce.printStackTrace(); // Imprimir stack trace completo
                     System.err.println("Error al crear Historia Clínica automática: " + hce.getMessage());
                     response.put("historiaClinicaError", "No se pudo crear la historia clínica: " + hce.getMessage());
+                }
+                
+                } catch (Exception e) {
+                   System.err.println("DEBUG: Error CRITICO creando paciente: " + e.getMessage());
+                   e.printStackTrace();
+                   response.put("pacienteError", "Error creando paciente: " + e.getMessage());
                 }
             }
 

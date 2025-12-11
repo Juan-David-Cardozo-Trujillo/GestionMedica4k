@@ -3,19 +3,8 @@ let allAudits = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAudit();
-    setDefaultDates();
 });
 
-function setDefaultDates() {
-    const today = new Date().toISOString().split('T')[0];
-    // Restar 7 días
-    const weekAgoDate = new Date();
-    weekAgoDate.setDate(weekAgoDate.getDate() - 7);
-    const weekAgo = weekAgoDate.toISOString().split('T')[0];
-    
-    document.getElementById('filterFechaInicio').value = weekAgo;
-    document.getElementById('filterFechaFin').value = today;
-}
 
 async function loadAudit() {
     try {
@@ -35,7 +24,7 @@ async function loadAudit() {
 function renderAudit(audits) {
     const tbody = document.getElementById('auditBody');
     tbody.innerHTML = '';
-    
+
     audits.forEach(audit => {
         // CORRECCIÓN: camelCase
         const fecha = new Date(audit.fechaEvento).toLocaleString('es-ES');
@@ -60,34 +49,27 @@ function renderAudit(audits) {
 
 function updateStats(audits) {
     document.getElementById('totalEvents').textContent = audits.length;
-    
+
     const today = new Date().toDateString();
-    const todayCount = audits.filter(a => 
+    const todayCount = audits.filter(a =>
         new Date(a.fechaEvento).toDateString() === today // camelCase
     ).length;
     document.getElementById('todayEvents').textContent = todayCount;
 }
 
 function filterAudit() {
-    const fechaInicio = document.getElementById('filterFechaInicio').value;
-    const fechaFin = document.getElementById('filterFechaFin').value;
-    const accion = document.getElementById('filterAccion').value;
     const tabla = document.getElementById('filterTabla').value.toLowerCase();
-    
+
     const filtered = allAudits.filter(a => {
-        const fecha = new Date(a.fechaEvento).toISOString().split('T')[0]; // camelCase
-        const matchFecha = (!fechaInicio || fecha >= fechaInicio) && 
-                          (!fechaFin || fecha <= fechaFin);
-        const matchAccion = !accion || a.accion === accion;
         // camelCase y validación de null
         const matchTabla = !tabla || (a.tablaAfectada && a.tablaAfectada.toLowerCase().includes(tabla));
-        return matchFecha && matchAccion && matchTabla;
+        return matchTabla;
     });
-    
+
     renderAudit(filtered);
 }
 
-// ... exportToCSV y showNotification (iguales pero usando las variables corregidas arriba) ...
+// ... showNotification ...
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type} show`;

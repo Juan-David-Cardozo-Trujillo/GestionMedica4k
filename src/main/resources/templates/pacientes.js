@@ -17,11 +17,11 @@ async function loadPatients() {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         if (!response.ok) {
             throw new Error('Error al cargar pacientes');
         }
-        
+
         allPatients = await response.json();
         console.log('✅ Pacientes cargados:', allPatients); // Debug
         renderPatients(allPatients);
@@ -35,7 +35,7 @@ async function loadPatients() {
 function renderPatients(patients) {
     const tbody = document.getElementById('patientsBody');
     tbody.innerHTML = '';
-    
+
     if (patients.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -46,7 +46,7 @@ function renderPatients(patients) {
         `;
         return;
     }
-    
+
     patients.forEach(patient => {
         // ✅ CORRECCIÓN: Usar camelCase consistente
         const edad = calcularEdad(patient.fechaNacimiento);
@@ -77,11 +77,11 @@ function calcularEdad(fechaNacimiento) {
     const nacimiento = new Date(fechaNacimiento);
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
     const mes = hoy.getMonth() - nacimiento.getMonth();
-    
+
     if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
         edad--;
     }
-    
+
     return edad;
 }
 
@@ -90,11 +90,11 @@ function openModal(patient = null) {
     const modal = document.getElementById('patientModal');
     const form = document.getElementById('patientForm');
     const title = document.getElementById('modalTitle');
-    
+
     if (patient) {
         title.textContent = 'Editar Paciente';
         currentPatient = patient;
-        
+
         // ✅ CORRECCIÓN: Usar camelCase
         document.getElementById('numDocumento').value = patient.numDocumento;
         document.getElementById('numDocumento').disabled = true;
@@ -111,7 +111,7 @@ function openModal(patient = null) {
         form.reset();
         document.getElementById('numDocumento').disabled = false;
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -125,7 +125,7 @@ function closeModal() {
 // ========== GUARDAR PACIENTE ==========
 async function savePatient(event) {
     event.preventDefault();
-    
+
     const esNuevo = !currentPatient;
 
     const patientData = {
@@ -142,14 +142,14 @@ async function savePatient(event) {
             dirPaciente: document.getElementById('dirPaciente').value.trim()
         }
     };
-    
+
     try {
-        const url = currentPatient 
+        const url = currentPatient
             ? `${API_URL}/api/pacientes/${currentPatient.codPaciente}/${currentPatient.numDocumento}`
             : `${API_URL}/api/pacientes`;
-        
+
         const method = currentPatient ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -158,12 +158,12 @@ async function savePatient(event) {
             },
             body: JSON.stringify(patientData)
         });
-        
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.mensaje || 'Error al guardar');
         }
-        
+
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'pacientes');
 
@@ -171,7 +171,7 @@ async function savePatient(event) {
             currentPatient ? 'Paciente actualizado correctamente' : 'Paciente creado correctamente',
             'success'
         );
-        
+
         closeModal();
         loadPatients();
     } catch (error) {
@@ -190,7 +190,7 @@ async function deletePatient(codPaciente, numDocumento) {
     if (!confirm('¿Está seguro de eliminar este paciente?\n\nEsta acción no se puede deshacer.')) {
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}/api/pacientes/${codPaciente}/${numDocumento}`, {
             method: 'DELETE',
@@ -198,13 +198,13 @@ async function deletePatient(codPaciente, numDocumento) {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        
+
         if (!response.ok) {
             throw new Error('Error al eliminar');
         }
 
         await registrarAuditoria('DELETE', 'pacientes');
-        
+
         showNotification('Paciente eliminado correctamente', 'success');
         loadPatients();
     } catch (error) {
@@ -217,20 +217,20 @@ async function deletePatient(codPaciente, numDocumento) {
 function filterPatients() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const sedeFilter = document.getElementById('filterSede').value;
-    
+
     let filtered = allPatients.filter(patient => {
         // ✅ CORRECCIÓN: Usar camelCase
-        const matchesSearch = 
+        const matchesSearch =
             (patient.nombrePersona || '').toLowerCase().includes(searchTerm) ||
             (patient.apellidoPersona || '').toLowerCase().includes(searchTerm) ||
             (patient.numDocumento || '').toString().includes(searchTerm) ||
             (patient.correo || '').toLowerCase().includes(searchTerm);
-        
-        const matchesSede = !sedeFilter || true;
-        
-        return matchesSearch && matchesSede;
+
+
+
+        return matchesSearch;
     });
-    
+
     renderPatients(filtered);
 }
 
@@ -239,13 +239,13 @@ function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.classList.add('show');
     }, 100);
-    
+
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -257,7 +257,7 @@ function showNotification(message, type = 'info') {
 }
 
 // ========== CERRAR MODAL AL HACER CLIC FUERA ==========
-window.onclick = function(event) {
+window.onclick = function (event) {
     const modal = document.getElementById('patientModal');
     if (event.target === modal) {
         closeModal();

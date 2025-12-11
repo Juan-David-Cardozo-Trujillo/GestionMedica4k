@@ -10,9 +10,7 @@
       <header>
         <h1>🔒 Auditoría de Accesos</h1>
         <div style="display: flex; gap: 10px;">
-          <button class="btn btn-secondary" onclick="exportToCSV()">
-            📥 Exportar CSV
-          </button>
+
           <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
             ← Volver
           </button>
@@ -20,19 +18,10 @@
       </header>
 
       <div class="filters">
-        <input type="date" id="filterFechaInicio" onchange="filterAudit()" />
-        <input type="date" id="filterFechaFin" onchange="filterAudit()" />
-        <select id="filterAccion" onchange="filterAudit()">
-          <option value="">Todas las acciones</option>
-          <option value="SELECT">SELECT</option>
-          <option value="INSERT">INSERT</option>
-          <option value="UPDATE">UPDATE</option>
-          <option value="DELETE">DELETE</option>
-        </select>
         <input
           type="text"
           id="filterTabla"
-          placeholder="Filtrar por tabla..."
+          placeholder="🔍 Buscar por tabla..."
           oninput="filterAudit()"
         />
       </div>

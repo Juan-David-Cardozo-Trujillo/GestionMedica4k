@@ -11,9 +11,9 @@ async function loadPersonas() {
         const response = await fetch(`${API_URL}/personas`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) throw new Error('Error al cargar');
-        
+
         allPersonas = await response.json();
         renderPersonas(allPersonas);
         updateStats();
@@ -26,20 +26,20 @@ async function loadPersonas() {
 function renderPersonas(personas) {
     const tbody = document.getElementById('personasBody');
     tbody.innerHTML = '';
-    
+
     if (personas.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">
             No hay personas registradas</td></tr>`;
         return;
     }
-    
+
     personas.forEach(p => {
         // CORRECCIÓN: Usar nombres de propiedad camelCase (Java style)
         // p.fechaNacimiento viene como "2023-01-01"
         const edad = calcularEdad(p.fechaNacimiento);
-        
+
         // Formateo de fecha: extraer solo la parte de la fecha (YYYY-MM-DD)
-        const fechaMostrar = p.fechaNacimiento ? p.fechaNacimiento.split('T')[0] : 'N/A'; 
+        const fechaMostrar = p.fechaNacimiento ? p.fechaNacimiento.split('T')[0] : 'N/A';
 
         tbody.innerHTML += `
             <tr>
@@ -62,7 +62,7 @@ function calcularEdad(fechaString) {
     const nacimiento = new Date(fechaString);
     // Ajuste por zona horaria simple (añadimos horas para compensar UTC)
     nacimiento.setMinutes(nacimiento.getMinutes() + nacimiento.getTimezoneOffset());
-    
+
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
     const mes = hoy.getMonth() - nacimiento.getMonth();
     if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
@@ -72,25 +72,25 @@ function calcularEdad(fechaString) {
 function updateStats() {
     document.getElementById('totalPersonas').textContent = allPersonas.length;
     // CamelCase aquí también
-    document.getElementById('totalMasculino').textContent = 
+    document.getElementById('totalMasculino').textContent =
         allPersonas.filter(p => p.genero === 'M').length;
-    document.getElementById('totalFemenino').textContent = 
+    document.getElementById('totalFemenino').textContent =
         allPersonas.filter(p => p.genero === 'F').length;
 }
 
 function openModal(persona = null) {
     const modal = document.getElementById('personaModal');
     const form = document.getElementById('personaForm');
-    
+
     if (persona) {
         document.getElementById('modalTitle').textContent = 'Editar Persona';
         currentPersona = persona;
-        
+
         // Llenar campos usando camelCase
         document.getElementById('tipoDocumento').value = persona.tipoDocumento;
         document.getElementById('numDocumento').value = persona.numDocumento;
         document.getElementById('numDocumento').disabled = true; // No se puede editar la PK
-        
+
         document.getElementById('nombrePersona').value = persona.nombrePersona;
         document.getElementById('apellidoPersona').value = persona.apellidoPersona;
         document.getElementById('genero').value = persona.genero;
@@ -102,7 +102,7 @@ function openModal(persona = null) {
         form.reset();
         document.getElementById('numDocumento').disabled = false;
     }
-    
+
     modal.style.display = 'block';
 }
 
@@ -114,7 +114,7 @@ async function savePersona(event) {
     event.preventDefault();
 
     const esNuevo = !currentPersona; // Determinar si es INSERT o UPDATE
-    
+
     const data = {
         // IDs del HTML -> Propiedades Java (camelCase)
         numDocumento: parseInt(document.getElementById('numDocumento').value),
@@ -125,14 +125,14 @@ async function savePersona(event) {
         fechaNacimiento: document.getElementById('fechaNacimiento').value,
         correo: document.getElementById('correo').value.trim()
     };
-    
+
     try {
-        const url = currentPersona 
+        const url = currentPersona
             ? `${API_URL}/personas/${currentPersona.numDocumento}`
             : `${API_URL}/personas`;
-        
+
         const method = currentPersona ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method,
             headers: {
@@ -141,7 +141,7 @@ async function savePersona(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(errorText);
@@ -149,7 +149,7 @@ async function savePersona(event) {
 
         const accion = esNuevo ? 'INSERT' : 'UPDATE';
         await registrarAuditoria(accion, 'personas');
-        
+
         showNotification('Persona guardada correctamente', 'success');
         closeModal();
         loadPersonas();
@@ -165,13 +165,13 @@ function editPersona(persona) {
 
 async function deletePersona(numDocumento) {
     if (!confirm('¿Eliminar esta persona?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/personas/${numDocumento}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-        
+
         if (!response.ok) {
             const errorMsg = await response.text();
             throw new Error(errorMsg);
@@ -190,9 +190,8 @@ async function deletePersona(numDocumento) {
 
 function filterPersonas() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    const genero = document.getElementById('filterGenero').value;
-    const tipoDoc = document.getElementById('filterTipoDoc').value;
-    
+
+
     const filtered = allPersonas.filter(p => {
         // Validamos y usamos camelCase
         const nombre = p.nombrePersona ? p.nombrePersona.toLowerCase() : '';
@@ -200,18 +199,15 @@ function filterPersonas() {
         const correo = p.correo ? p.correo.toLowerCase() : '';
         const numDoc = p.numDocumento ? p.numDocumento.toString() : '';
 
-        const matchSearch = 
+        const matchSearch =
             nombre.includes(search) ||
             apellido.includes(search) ||
             numDoc.includes(search) ||
             correo.includes(search);
-            
-        const matchGenero = !genero || p.genero === genero;
-        const matchTipo = !tipoDoc || p.tipoDocumento === tipoDoc;
-        
-        return matchSearch && matchGenero && matchTipo;
+
+        return matchSearch;
     });
-    
+
     renderPersonas(filtered);
 }
 

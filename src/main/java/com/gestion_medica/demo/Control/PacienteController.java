@@ -116,6 +116,49 @@ public class PacienteController {
     }
 
     /**
+     * GET BY NUM DOCUMENTO - Obtener info básica del paciente
+     * URL con 3 segmentos para evitar colisión con el patrón /{id}/{id}
+     */
+    @GetMapping("/search/documento/{numDocumento}")
+    public ResponseEntity<Map<String, Object>> getPacienteInfoByNumDocumento(
+            @PathVariable Integer numDocumento) {
+
+        try {
+            // Buscar paciente usando el método del servicio
+            Paciente p = pacienteService.findByNumDocumento(numDocumento);
+
+            if (p == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("mensaje", "Paciente no encontrado para el documento dado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            Map<String, Object> pacienteData = new HashMap<>();
+
+            pacienteData.put("codPaciente", p.getCodPaciente());
+            pacienteData.put("numDocumento", p.getNumDocumento());
+            pacienteData.put("dirPaciente", p.getDirPaciente());
+
+            if (p.getPersona() != null) {
+                Persona persona = p.getPersona();
+                pacienteData.put("tipoDocumento", persona.getTipoDocumento());
+                pacienteData.put("nombrePersona", persona.getNombrePersona());
+                pacienteData.put("apellidoPersona", persona.getApellidoPersona());
+            }
+
+            response.put("success", true);
+            response.put("paciente", pacienteData);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * POST - Crear nuevo paciente
      */
     @PostMapping

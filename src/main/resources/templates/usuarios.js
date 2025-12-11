@@ -164,8 +164,35 @@ function openModal(usuario = null) {
         document.getElementById('contrasena').value = '';
         document.getElementById('contrasena').placeholder = 'Dejar en blanco para mantener actual';
         document.getElementById('contrasena').required = false;
-        document.getElementById('rol').value = usuario.rol;
+        // Lógica ROBUSTA para seleccionar el rol correcto
+        const rolSelect = document.getElementById('rol');
+        // Limpiamos el rol que viene del backend (quitar tildes, espacios, etc)
+        const userRolClean = (usuario.rol || '').toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+            .replace(/[^a-z0-9]/g, ''); // Solo letras y números
 
+        let match = Array.from(rolSelect.options).find(opt => {
+            const valClean = opt.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const textClean = opt.text.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, '');
+
+            return valClean === userRolClean || textClean.includes(userRolClean);
+        });
+
+        // Fallback manual si el autodescubrimiento falla
+        if (!match) {
+            if (userRolClean.includes('tecnico')) match = { value: 'TecnicoMantenimiento' };
+            if (userRolClean.includes('medico')) match = { value: 'Medico' };
+        }
+
+        if (match) {
+            rolSelect.value = match.value;
+        } else {
+            console.warn('No se pudo mapear el rol automáticamente:', usuario.rol);
+        }
+
+        handleRoleChange(); // Ensure fields are shown for the role
         mostrarPermisos();
     } else {
         title.textContent = 'Nuevo Usuario';
@@ -455,12 +482,10 @@ async function deleteUsuario(idUsuario) {
 // ========== FILTRAR USUARIOS ==========
 function filterUsuarios() {
     const searchInput = document.getElementById('searchInput');
-    const rolFilter = document.getElementById('filterRol');
-
-    if (!searchInput || !rolFilter) return;
+    if (!searchInput) return;
 
     const search = searchInput.value.toLowerCase();
-    const rol = rolFilter.value;
+
 
     const filtered = allUsuarios.filter(user => {
         const matchSearch =
@@ -469,9 +494,7 @@ function filterUsuarios() {
             (user.persona?.apellidoPersona || '').toLowerCase().includes(search) ||
             (user.persona?.numDocumento || '').toString().includes(search);
 
-        const matchRol = !rol || user.rol === rol;
-
-        return matchSearch && matchRol;
+        return matchSearch;
     });
 
     renderUsuarios(filtered);

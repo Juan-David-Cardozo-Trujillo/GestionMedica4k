@@ -23,6 +23,7 @@ async function loadHistorias() {
         allHistorias = await response.json();
         renderHistorias(allHistorias);
         updateStats();
+        await registrarAuditoria('SELECT', 'historias_clinicas');
     } catch (error) {
         console.error('Error:', error);
         showNotification('Error al cargar historias clínicas', 'error');
@@ -270,7 +271,7 @@ async function saveHistoria(event) {
             throw new Error('Error al guardar: ' + result);
         }
 
-        await registrarAuditoria('INSERT', 'historias-clinicas');
+        await registrarAuditoria('INSERT', 'historias_clinicas');
 
         showNotification('Historia clínica creada correctamente', 'success');
         closeModal();
@@ -294,7 +295,7 @@ async function showDetails(codigoHistoria) {
         currentHistoria = historia;
 
         // Registrar acceso de lectura en auditoría
-        await registrarAuditoria('SELECT', 'historias-clinicas');
+        await registrarAuditoria('SELECT', 'historias_clinicas');
 
         const paciente = historia.paciente || {};
         const nombre = paciente.nombrePersona ? `${paciente.nombrePersona} ${paciente.apellidoPersona}` : 'N/A';
@@ -502,7 +503,7 @@ async function deleteHistoria(codHistoria) {
 
         if (!response.ok) throw new Error('Error');
 
-        await registrarAuditoria('DELETE', 'historias-clinicas');
+        await registrarAuditoria('DELETE', 'historias_clinicas');
 
         showNotification('Historia eliminada', 'success');
         loadHistorias();
@@ -566,24 +567,4 @@ function showNotification(message, type) {
 }
 
 // Registrar auditoría
-async function registrarAuditoria(accion, tabla) {
-    try {
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-
-        await fetch(`${API_URL}/auditoria/registrar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                accion: accion,
-                tabla: tabla,
-                ipOrigen: 'Web-Client',
-                idUsuario: usuario.idUsuario || null
-            })
-        });
-    } catch (error) {
-        console.error('Error al registrar auditoría:', error);
-    }
-}
+// La función registrarAuditoria se importa desde auditoria-helper.js

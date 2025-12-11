@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes Médicos</title>
+    <title>Estadísticas y Reportes</title>
     <link rel="stylesheet" href="reportes.css">
 </head>
 <body>
@@ -11,12 +11,10 @@
         <header>
             <h1>📊 Sistema de Reportes Médicos</h1>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="exportarTodos()">
-                    📥 Exportar Todo
+                <button class="btn btn-primary" onclick="openCrearReporteModal()">
+                    ➕ Crear Reporte
                 </button>
-                <button class="btn btn-primary" onclick="window.print()">
-                    🖨️ Imprimir
-                </button>
+
                 <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
                     ← Volver
                 </button>
@@ -25,7 +23,7 @@
 
         <!-- Menú de Reportes -->
         <div class="reportes-menu">
-            <h2>Seleccione un Reporte</h2>
+            <h2>Estadísticas Disponibles</h2>
             <div class="reportes-grid">
                 <div class="reporte-card" onclick="loadReporte('medicamentos')">
                     <div class="reporte-icon">💊</div>
@@ -80,6 +78,35 @@
             <div id="reporteContent" class="reporte-content">
                 <!-- Contenido dinámico -->
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear Reporte Manual -->
+    <div id="crearReporteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCrearReporteModal()">&times;</span>
+            <h2>➕ Nuevo Reporte Médico</h2>
+            <form id="crearReporteForm" onsubmit="saveReporteMedico(event)">
+                <div class="form-group">
+                    <label>Sede Hospitalaria *</label>
+                    <select id="idSedeReporte" required>
+                        <option value="">Seleccione una sede</option>
+                        <!-- Se poblará dinámicamente -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Reporte *</label>
+                    <input type="text" id="tipoReporte" placeholder="Ej: Incidencia Mensual" required maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>Resumen *</label>
+                    <textarea id="resumenReporte" rows="4" placeholder="Describa el reporte..." required maxlength="150"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCrearReporteModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Reporte</button>
+                </div>
+            </form>
         </div>
     </div>
 
