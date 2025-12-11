@@ -8,19 +8,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import com.gestion_medica.demo.model.Usuario;
+import com.gestion_medica.demo.model.Empleado;
 import com.gestion_medica.demo.service.UsuarioService;
+import com.gestion_medica.demo.service.EmpleadoService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class HomeController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private EmpleadoService empleadoService;
 
     @GetMapping("/")
     public String index() {
@@ -37,80 +41,13 @@ public class HomeController {
         return "dashboard";
     }
 
-    @GetMapping("/dashboard-paciente")
-    public String dashboardPaciente() {
-        return "dashboard-paciente";
-    }
-
-    @GetMapping("/dashboard-medico")
-    public String dashboardMedico() {
-        return "dashboard-medico";
-    }
-
-    @GetMapping("/usuarios")
-    public String usuarios() {
-        return "usuarios";
-    }
-
-    @GetMapping("/personas")
-    public String personas() {
-        return "personas";
-    }
-
-    @GetMapping("/pacientes")
-    public String pacientes() {
-        return "Pacientes";
-    }
-
-    @GetMapping("/empleados")
-    public String empleados() {
-        return "empleados";
-    }
-
-    @GetMapping("/historias-clinicas")
-    public String historiasClinicas() {
-        return "historias-clinicas";
-    }
-
-    @GetMapping("/diagnostico")
-    public String diagnostico() {
-        return "diagnostico";
-    }
-
-    @GetMapping("/medicamentos")
-    public String medicamentos() {
-        return "medicamentos";
-    }
-
-    @GetMapping("/enfermedades")
-    public String enfermedades() {
-        return "enfermedades";
-    }
-
-    @GetMapping("/departamentos")
-    public String departamentos() {
-        return "departamentos";
-    }
-
-    @GetMapping("/sedes")
-    public String sedes() {
-        return "sedes";
-    }
-
-    @GetMapping("/auditoria")
-    public String auditoria() {
-        return "auditoria";
-    }
-
-    @Autowired
-    private com.gestion_medica.demo.service.EmpleadoService empleadoService;
-
-    /**
-     * Endpoint REST para login
-     */
+    // ✅ MÉTODO LOGIN ACTUALIZADO
     @PostMapping("/api/login")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<Map<String, Object>> login(
+            @RequestBody Map<String, String> credentials,
+            HttpSession session) {
+        
         String nombreUsuario = credentials.get("nombreUsuario");
         String password = credentials.get("password");
 
@@ -129,17 +66,20 @@ public class HomeController {
             userData.put("rol", usuario.getRol());
             userData.put("numDocumento", usuario.getPersona().getNumDocumento());
 
-            // Si es médico o técnico, adjuntar idEmpleado
-            // Esto es crucial para que el frontend pueda filtrar datos (ej. equipamientos asignados)
-            if ("Medico".equalsIgnoreCase(usuario.getRol()) || "Médico".equalsIgnoreCase(usuario.getRol()) ||
-                "Tecnico".equalsIgnoreCase(usuario.getRol()) || "Técnico".equalsIgnoreCase(usuario.getRol()) ||
-                "TecnicoMantenimiento".equalsIgnoreCase(usuario.getRol())) {
-                com.gestion_medica.demo.model.Empleado emp = empleadoService.findByNumDocumento(usuario.getPersona().getNumDocumento());
-                if (emp != null) {
-                    userData.put("idEmpleado", emp.getIdEmpleado());
-                }
+            // ✅ DETERMINAR SEDE DEL USUARIO
+            Integer idSede = determinarSede(usuario);
+            
+            if (idSede != null) {
+                userData.put("idSede", idSede);
+                session.setAttribute("idSede", idSede);
+                System.out.println("👤 Usuario " + nombreUsuario + " → Sede " + idSede);
+            } else {
+                // Default Sede 1 si no se puede determinar
+                userData.put("idSede", 1);
+                session.setAttribute("idSede", 1);
+                System.out.println("⚠️ Usuario " + nombreUsuario + " sin sede, usando Sede 1 por defecto");
             }
-
+            
             response.put("usuario", userData);
             return ResponseEntity.ok(response);
         } else {
@@ -148,13 +88,37 @@ public class HomeController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
-
+    
     /**
-     * Endpoint REST para logout
+     * Determina la sede del usuario según su rol
      */
+    private Integer determinarSede(Usuario usuario) {
+        String rol = usuario.getRol();
+        
+        // Si es Médico o Técnico, obtener sede de su departamento
+        if ("Medico".equalsIgnoreCase(rol) || "Médico".equalsIgnoreCase(rol) ||
+            "Tecnico".equalsIgnoreCase(rol) || "Técnico".equalsIgnoreCase(rol) ||
+            "TecnicoMantenimiento".equalsIgnoreCase(rol)) {
+            
+            Empleado emp = empleadoService.findByNumDocumento(
+                usuario.getPersona().getNumDocumento()
+            );
+            
+            if (emp != null && emp.getDepartamento() != null) {
+                return emp.getDepartamento().getIdSede();
+            }
+        }
+        
+        // Si es Paciente, podrías asignarlo a una sede por zona geográfica
+        // Por ahora retornamos null para usar default
+        
+        return null; // Null = usar default (Sede 1)
+    }
+
     @PostMapping("/api/logout")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> logout() {
+    public ResponseEntity<Map<String, Object>> logout(HttpSession session) {
+        session.invalidate();
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("mensaje", "Logout exitoso");

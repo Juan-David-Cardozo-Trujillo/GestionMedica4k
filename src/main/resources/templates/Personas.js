@@ -1,16 +1,21 @@
-const API_URL = 'http://localhost:8080/api'; // Puerto Correcto
+const API_URL = 'http://localhost:8080/api';
 let currentPersona = null;
 let allPersonas = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificar autenticación
+    if (!requireAuth()) return;
+
+    // Mostrar información de sede en consola
+    console.log('👤 Usuario logueado - Sede:', getSedeId());
+
     loadPersonas();
 });
 
+// ✅ ACTUALIZADO: Usar fetchWithSede
 async function loadPersonas() {
     try {
-        const response = await fetch(`${API_URL}/personas`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        const response = await fetchWithSede(`${API_URL}/personas`);
 
         if (!response.ok) throw new Error('Error al cargar');
 
@@ -34,16 +39,15 @@ function renderPersonas(personas) {
     }
 
     personas.forEach(p => {
-        // CORRECCIÓN: Usar nombres de propiedad camelCase (Java style)
-        // p.fechaNacimiento viene como "2023-01-01"
         const edad = calcularEdad(p.fechaNacimiento);
-
-        // Formateo de fecha: extraer solo la parte de la fecha (YYYY-MM-DD)
         const fechaMostrar = p.fechaNacimiento ? p.fechaNacimiento.split('T')[0] : 'N/A';
 
         tbody.innerHTML += `
             <tr>
-                <td>${p.numDocumento}</td> <td>${p.tipoDocumento}</td> <td>${p.nombrePersona} ${p.apellidoPersona}</td> <td>${p.genero === 'M' ? 'Masculino' : 'Femenino'}</td>
+                <td>${p.numDocumento}</td>
+                <td>${p.tipoDocumento}</td>
+                <td>${p.nombrePersona} ${p.apellidoPersona}</td>
+                <td>${p.genero === 'M' ? 'Masculino' : 'Femenino'}</td>
                 <td>${fechaMostrar}</td>
                 <td>${edad} años</td>
                 <td>${p.correo}</td>
@@ -60,7 +64,6 @@ function calcularEdad(fechaString) {
     if (!fechaString) return 0;
     const hoy = new Date();
     const nacimiento = new Date(fechaString);
-    // Ajuste por zona horaria simple (añadimos horas para compensar UTC)
     nacimiento.setMinutes(nacimiento.getMinutes() + nacimiento.getTimezoneOffset());
 
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
@@ -71,7 +74,6 @@ function calcularEdad(fechaString) {
 
 function updateStats() {
     document.getElementById('totalPersonas').textContent = allPersonas.length;
-    // CamelCase aquí también
     document.getElementById('totalMasculino').textContent =
         allPersonas.filter(p => p.genero === 'M').length;
     document.getElementById('totalFemenino').textContent =
@@ -86,10 +88,9 @@ function openModal(persona = null) {
         document.getElementById('modalTitle').textContent = 'Editar Persona';
         currentPersona = persona;
 
-        // Llenar campos usando camelCase
         document.getElementById('tipoDocumento').value = persona.tipoDocumento;
         document.getElementById('numDocumento').value = persona.numDocumento;
-        document.getElementById('numDocumento').disabled = true; // No se puede editar la PK
+        document.getElementById('numDocumento').disabled = true;
 
         document.getElementById('nombrePersona').value = persona.nombrePersona;
         document.getElementById('apellidoPersona').value = persona.apellidoPersona;
@@ -110,13 +111,13 @@ function closeModal() {
     document.getElementById('personaModal').style.display = 'none';
 }
 
+// ✅ ACTUALIZADO: Usar fetchWithSede
 async function savePersona(event) {
     event.preventDefault();
 
-    const esNuevo = !currentPersona; // Determinar si es INSERT o UPDATE
+    const esNuevo = !currentPersona;
 
     const data = {
-        // IDs del HTML -> Propiedades Java (camelCase)
         numDocumento: parseInt(document.getElementById('numDocumento').value),
         tipoDocumento: document.getElementById('tipoDocumento').value,
         nombrePersona: document.getElementById('nombrePersona').value.trim(),
@@ -133,12 +134,9 @@ async function savePersona(event) {
 
         const method = currentPersona ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
+        // ✅ fetchWithSede incluye X-Sede-Id automáticamente
+        const response = await fetchWithSede(url, {
+            method: method,
             body: JSON.stringify(data)
         });
 
@@ -163,13 +161,13 @@ function editPersona(persona) {
     openModal(persona);
 }
 
+// ✅ ACTUALIZADO: Usar fetchWithSede
 async function deletePersona(numDocumento) {
     if (!confirm('¿Eliminar esta persona?')) return;
 
     try {
-        const response = await fetch(`${API_URL}/personas/${numDocumento}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        const response = await fetchWithSede(`${API_URL}/personas/${numDocumento}`, {
+            method: 'DELETE'
         });
 
         if (!response.ok) {
@@ -183,7 +181,6 @@ async function deletePersona(numDocumento) {
         loadPersonas();
     } catch (error) {
         console.error(error);
-        // Muestra el mensaje exacto del backend (ej: "No se puede eliminar...")
         showNotification(error.message, 'error');
     }
 }
@@ -191,9 +188,7 @@ async function deletePersona(numDocumento) {
 function filterPersonas() {
     const search = document.getElementById('searchInput').value.toLowerCase();
 
-
     const filtered = allPersonas.filter(p => {
-        // Validamos y usamos camelCase
         const nombre = p.nombrePersona ? p.nombrePersona.toLowerCase() : '';
         const apellido = p.apellidoPersona ? p.apellidoPersona.toLowerCase() : '';
         const correo = p.correo ? p.correo.toLowerCase() : '';
