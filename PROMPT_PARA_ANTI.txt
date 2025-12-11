@@ -1,0 +1,754 @@
+# CONTEXTO DEL PROYECTO
+
+Tengo un sistema hospitalario (HIS+) en Spring Boot con PostgreSQL que necesito migrar a una arquitectura distribuida con 3 bases de datos. Ya tengo configuradas las clases base pero NO funcionan correctamente.
+
+## ARQUITECTURA OBJETIVO
+
+### 1. Base de Datos COMPARTIDA (Nueva instancia AWS RDS - `his_compartida`)
+**Tablas que TODAS las sedes comparten:**
+- Sedes_Hospitalarias
+- Persona
+- Pacientes
+- Pacientes_asiste_Sedes_Hospitalarias
+- Historias_Clinicas
+- Medicamentos
+- Usuario
+- Auditoria_Accesos
+- Enfermedades
+
+### 2. Base de Datos SEDE 1 (AWS RDS - `his_sede1`)
+**Tablas operacionales locales:**
+- Equipamientos
+- Departamentos
+- Reportes_Medicos
+- Equipamientos_Usa_Departamentos
+- Empleados
+- Empleados_mantienen_Equipamientos
+- Citas
+- Historias_Clinicas_registra_diagnostica
+- Citas_diagnostica_Enfermedades
+- Citas_prescribe_Medicamentos
+
+**Acceso a tablas compartidas:** Mediante Foreign Data Wrapper (FDW) de PostgreSQL
+
+### 3. Base de Datos SEDE 2 (Azure PostgreSQL - `his_sede2`)
+**Mismas tablas operacionales que Sede 1**
+**Acceso a tablas compartidas:** Mediante FDW
+
+## CONFIGURACIÓN ACTUAL
+
+Mi `application.properties`:
+```properties
+# COMPARTIDA (AWS)
+spring.datasource.shared.jdbc-url=jdbc:postgresql://aws-shared.rds.amazonaws.com:5432/SedeHospitalariaSur
+spring.datasource.shared.username=postgres
+spring.datasource.shared.password=postgres
+
+# SEDE 1 (AWS)
+spring.datasource.sede1.jdbc-url=jdbc:postgresql://aws-sede1.rds.amazonaws.com:5432/SedeHospitalariaNorte
+spring.datasource.sede1.username=postgres
+spring.datasource.sede1.password=postgres
+
+# SEDE 2 (Azure)
+spring.datasource.sede2.jdbc-url=jdbc:postgresql://azure-sede2.postgres.database.azure.com:5432/his_sede2
+spring.datasource.sede2.username=administrador
+spring.datasource.sede2.password=4184812
+```
+
+## CLASES DE CONFIGURACIÓN EXISTENTES (REVISAR Y CORREGIR)
+
+### 1. HybridDataSourceConfig.java
+```java
+package com.gestion_medica.demo.config;
+
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
+@Configuration
+public class HybridDataSourceConfig {
+
+    @Bean(name = "sharedDataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.shared")
+    public DataSource sharedDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @Bean(name = "sede1DataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.sede1")
+    public DataSource sede1DataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @Bean(name = "sede2DataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.sede2")
+    public DataSource sede2DataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @Primary
+    @Bean(name = "routingDataSource")
+    public DataSource routingDataSource(
+            @Qualifier("sharedDataSource") DataSource shared,
+            @Qualifier("sede1DataSource") DataSource sede1,
+            @Qualifier("sede2DataSource") DataSource sede2) {
+        
+        HybridRoutingDataSource routing = new HybridRoutingDataSource();
+        
+        Map<Object, Object> dataSources = new HashMap<>();
+        dataSources.put("SHARED", shared);
+        dataSources.put("SEDE1", sede1);
+        dataSources.put("SEDE2", sede2);
+        
+        routing.setTargetDataSources(dataSources);
+        routing.setDefaultTargetDataSource(shared);
+        
+        return routing;
+    }
+}
+```
+
+### 2. HybridRoutingDataSource.java
+```java
+package com.gestion_medica.demo.config;
+
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+public class HybridRoutingDataSource extends AbstractRoutingDataSource {
+    
+    @Override
+    protected Object determineCurrentLookupKey() {
+        String dataSource = SedeContextHolder.getSedeDataSource();
+        if (dataSource == null || dataSource.isEmpty()) {
+            return "SHARED";
+        }
+        return dataSource;
+    }
+}
+```
+
+### 3. SedeContextHolder.java
+```java
+package com.gestion_medica.demo.config;
+
+public class SedeContextHolder {
+    
+    private static final ThreadLocal<String> CONTEXT = new ThreadLocal<>();
+    
+    public static void setSedeDataSource(String dataSource) {
+        CONTEXT.set(dataSource);
+    }
+    
+    public static String getSedeDataSource() {
+        String dataSource = CONTEXT.get();
+        if (dataSource == null) {
+            return "SHARED";
+        }
+        return dataSource;
+    }
+    
+    public static void clear() {
+        CONTEXT.remove();
+    }
+}
+```
+
+### 4. HybridSedeInterceptor.java
+```java
+package com.gestion_medica.demo.config;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+@Component
+public class HybridSedeInterceptor implements HandlerInterceptor {
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, 
+                           HttpServletResponse response, 
+                           Object handler) throws Exception {
+        
+        String requestURI = request.getRequestURI();
+        
+        if (isSharedTableRequest(requestURI)) {
+            SedeContextHolder.setSedeDataSource("SHARED");
+            return true;
+        }
+        
+        String idSedeStr = obtenerIdSede(request);
+        
+        if (idSedeStr != null) {
+            try {
+                Integer idSede = Integer.parseInt(idSedeStr);
+                String dataSource = mapSedeToDataSource(idSede);
+                SedeContextHolder.setSedeDataSource(dataSource);
+            } catch (NumberFormatException e) {
+                SedeContextHolder.setSedeDataSource("SHARED");
+            }
+        } else {
+            SedeContextHolder.setSedeDataSource("SHARED");
+        }
+        
+        return true;
+    }
+    
+    private boolean isSharedTableRequest(String uri) {
+        return uri.contains("/personas") ||
+               uri.contains("/usuarios") ||
+               uri.contains("/enfermedades") ||
+               uri.contains("/medicamentos") ||
+               uri.contains("/sedes") ||
+               uri.contains("/login");
+    }
+    
+    private String obtenerIdSede(HttpServletRequest request) {
+        String idSede = request.getHeader("X-Sede-Id");
+        if (idSede != null) return idSede;
+        
+        idSede = request.getParameter("idSede");
+        if (idSede != null) return idSede;
+        
+        Object sedeAttr = request.getSession().getAttribute("idSede");
+        if (sedeAttr != null) return sedeAttr.toString();
+        
+        return null;
+    }
+    
+    private String mapSedeToDataSource(Integer idSede) {
+        switch (idSede) {
+            case 1: return "SEDE1";
+            case 2: return "SEDE2";
+            default: return "SHARED";
+        }
+    }
+    
+    @Override
+    public void afterCompletion(HttpServletRequest request, 
+                               HttpServletResponse response, 
+                               Object handler, 
+                               Exception ex) throws Exception {
+        SedeContextHolder.clear();
+    }
+}
+```
+
+### 5. WebConfig.java
+```java
+package com.gestion_medica.demo.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private HybridSedeInterceptor sedeInterceptor;
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/");
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+    
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(sedeInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/login", "/api/logout");
+    }
+}
+```
+
+### 6. api-helper.js (Frontend)
+```javascript
+function getSedeId() {
+    const idSede = localStorage.getItem('idSede');
+    if (!idSede) {
+        console.warn('⚠️ No se encontró idSede en localStorage, usando Sede 1 por defecto');
+        return '1';
+    }
+    return idSede;
+}
+
+function getAuthHeaders() {
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Sede-Id': getSedeId()
+    };
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
+async function fetchWithSede(url, options = {}) {
+    const defaultOptions = {
+        headers: getAuthHeaders()
+    };
+    const finalOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...(options.headers || {})
+        }
+    };
+    return fetch(url, finalOptions);
+}
+```
+
+## CONTROLADORES EXISTENTES (ALGUNOS EJEMPLOS)
+
+### PacienteController.java
+```java
+@RestController
+@RequestMapping("/api/pacientes")
+public class PacienteController {
+    @Autowired
+    private PacienteService pacienteService;
+    
+    @GetMapping
+    public ResponseEntity<List<Map<String, Object>>> getAllPacientes() {
+        // Implementación actual...
+    }
+}
+```
+
+### EmpleadoController.java
+```java
+@RestController
+@RequestMapping("/api/empleados")
+public class EmpleadoController {
+    @Autowired
+    private EmpleadoService empleadoService;
+    
+    @GetMapping
+    public List<Map<String, Object>> listar() {
+        // Implementación actual...
+    }
+}
+```
+
+### EquipamientoController.java
+```java
+@RestController
+@RequestMapping("/api/equipamientos")
+public class EquipamientoController {
+    @Autowired
+    private EquipamientoService equipamientoService;
+    
+    @GetMapping
+    public ResponseEntity<List<Map<String, Object>>> getAllEquipamientos() {
+        // Implementación actual...
+    }
+}
+```
+
+## SERVICIOS EXISTENTES
+
+Tengo Services estándar para cada entidad con métodos CRUD básicos usando JpaRepository.
+
+## TABLAS SQL
+
+### Tablas COMPARTIDAS (Base de datos `his_compartida`):
+```sql
+create table Sedes_Hospitalarias (
+	idSede serial constraint Pk_idSede primary key,
+	nombreSede varchar(50) constraint notNull_nombreSede not null
+);
+
+create table Persona (
+	numDocumento integer constraint Pk_numDocumento primary key,
+	genero varchar(50) constraint notNull_genero not null,
+	tipoDocumento varchar(50) constraint notNull_tipoDocumento not null,
+	fechaNacimiento date constraint notNull_fechaNacimiento not null ,
+	apellidoPersona varchar(50) constraint notNull_apellidoPersona not null , 
+	nombrePersona varchar(50) constraint notNull_nombrePersona not null , 
+	correo varchar(50) constraint notNull_correo not null 
+);
+
+create table Pacientes (
+	codPaciente serial ,
+	dirPaciente varchar(50) constraint notNull_dirPaciente not null,
+	numDocumento integer,
+	constraint Fk_Persona_Pacientes foreign key (numDocumento) references Persona (numDocumento),
+	constraint Pk_Pacientes primary key(codPaciente, numDocumento )
+);
+
+create table Pacientes_asiste_Sedes_Hospitalarias (
+	codPaciente integer ,
+	numDocumento integer,
+	idSede integer,
+	constraint Fk_Sedes_Pacientes_asiste_Sedes_Hospitalarias foreign key (idSede) references Sedes_Hospitalarias (idSede),
+	constraint Fk_Paciente_Pacientes_asiste_Sedes_Hospitalarias foreign key (codPaciente, numDocumento ) references Pacientes (codPaciente, numDocumento),
+	constraint Pk_Pacientes_asiste_Sedes_Hospitalarias primary key(codPaciente, numDocumento, idSede )
+);
+
+create table Historias_Clinicas (
+	codHistoria serial constraint Pk_codHistoria primary key,
+	codPaciente integer ,
+	numDocumento integer,
+	constraint Fk_Paciente_Historias_Clinicas foreign key (codPaciente, numDocumento ) references Pacientes (codPaciente, numDocumento )
+);
+
+create table Medicamentos (
+	codMed integer constraint Pk_codMed primary key,
+	stock integer constraint notNull_stock not null,
+	proveedor varchar(50) constraint notNull_proveedor not null,
+	unidad varchar(50) constraint notNull_unidad not null,
+	descripcion varchar(50) constraint notNull_descripcion not null,
+	nombreMed varchar(50) constraint notNull_nombreMed not null
+);
+
+create table Usuario (
+	idUsuario serial constraint Pk_idUsuario primary key,
+	nombreUsuario varchar(50) constraint notNull_nombreUsuario not null
+							constraint unique_nombreUsuario unique,
+	contrasenaEncriptada varchar(50) constraint notNull_historia not null,
+	rol varchar(50) constraint notNull_rol not null,
+	numDocumento integer,
+	constraint Fk_Persona_Usuario foreign key (numDocumento) references Persona (numDocumento)
+);
+
+create table Auditoria_Accesos (
+	idEvento serial constraint Pk_idEvento primary key,
+	ipOrigen varchar(50) constraint notNull_ipOrigen not null,
+	accion varchar(50) constraint notNull_accion not null,
+	idUsuario integer,
+	fechaEvento timestamp constraint notNull_fechaEvento not null,
+	tablaAfectada varchar(50) constraint notNull_tablaAfectada not null,
+	constraint Fk_Usuario_Auditoria_Accesos foreign key (idUsuario) references Usuario (idUsuario)
+);
+
+create table Enfermedades(
+	idEnfermedad serial constraint Pk_idEnfermedad primary key,
+	nombreEnfermedad varchar(50) constraint notNull_nombreEnfermedad not null,
+	descripcionEnfermedad varchar(150) constraint notNull_descripcionEnfermedad not null
+);
+```
+
+### Tablas LOCALES (Bases de datos `his_sede1` y `his_sede2`):
+```sql
+create table Equipamientos (
+	codEquip serial constraint Pk_codEquip primary key,
+	nombreEquip varchar(50) constraint notNull_nombreEquip not null,
+	fechaMantenimiento date constraint notNull_fechaMantenimiento not null,
+	estado varchar(50) 
+		constraint notNull_estado not null 
+		constraint Check_estado check(estado in ('Operativo', 'En Mantenimiento', 'Fuera de Servicio'))
+);
+
+create table Departamentos (
+	nombreDepartamento varchar(50),
+	idSede integer, 
+	constraint Fk_idSede_Departamento foreign key (idSede) references Sedes_Hospitalarias (idSede),
+	constraint Pk_Departamento primary key (nombreDepartamento, idSede)
+);
+
+CREATE TABLE Reportes_Medicos (
+	idReporte serial constraint Pk_idReporte primary key,
+	idSede integer,
+	fechaGeneracion date constraint notNull_fechaGeneracion not null,
+	tipoReporte varchar(50) constraint notNull_tipoReporte not null,
+	resumen varchar(150) constraint notNull_resumen not null, 
+	constraint Fk_idSede_Reportes_Medicos foreign key (idSede) references Sedes_Hospitalarias (idSede)
+);
+
+create table Equipamientos_Usa_Departamentos (
+	codEquip integer ,
+	nombreDepartamento varchar(50),
+	idSede integer,
+	constraint Fk_Equipamientos_Equipamientos_Usa_Departamentos foreign key (codEquip) references Equipamientos (codEquip),
+	constraint Fk_Departamentos_Equipamientos_Usa_Departamentos foreign key (nombreDepartamento, idSede) references Departamentos (nombreDepartamento, idSede),
+	constraint Pk_Equipamientos_Usa_Departamentos primary key(codEquip, nombreDepartamento, idSede )
+);
+
+create table Empleados (
+	numDocumento integer,
+	idEmpleado serial,
+	nombreDepartamento varchar(50),
+	idSede integer, 
+	cargo varchar(50) constraint notNull_cargo_Empleados not null,
+	constraint Fk_Persona_Empleados foreign key (numDocumento) references Persona (numDocumento),
+	constraint Fk_Departamento_Empleados foreign key (nombreDepartamento, idSede ) references Departamentos (nombreDepartamento, idSede),
+	constraint Pk_Empleados primary key(numDocumento, idEmpleado)
+);
+
+create table Empleados_mantienen_Equipamientos (
+	numDocumento integer,
+	idEmpleado integer,
+	codEquip integer,
+	constraint Fk_Empleados_Empleados_mantienen_Equipamientos foreign key (numDocumento, idEmpleado ) references Empleados (numDocumento, idEmpleado),
+	constraint Fk_Equipamientos_Empleados_mantienen_Equipamientos foreign key (codEquip ) references Equipamientos (codEquip),
+	constraint Pk_Empleados_mantienen_Equipamientos primary key(numDocumento, idEmpleado, codEquip )
+);
+
+create table Citas (
+	idCita serial constraint Pk_idCita primary key,
+	tipoServicio varchar(50) constraint notNull_tipoServicio not null,
+	estado varchar(50) 
+		constraint notNull_estado not null
+		constraint Check_estado_Citas check(estado in ('Cancelada', 'Tomada', 'Pendiente')),
+	fecha date constraint notNull_fecha not null,
+	hora time constraint notNull_hora not null,
+	numDocumentoEmp integer,
+	idEmpleado integer,
+	codPaciente integer ,
+	numDocumentoPac integer,
+	constraint Fk_Citas_Empleado foreign key (numDocumentoEmp, idEmpleado ) references Empleados (numDocumento, idEmpleado),
+	constraint Fk_Citas_Paciente foreign key (codPaciente, numDocumentoPac) references Pacientes (codPaciente, numDocumento)
+);
+
+create table Historias_Clinicas_registra_diagnostica (
+	codHistoria integer,
+	idEnfermedad integer,
+	idCita integer,
+	fechaRegistro date constraint notNull_fechaRegistroEnfermedad not null, 
+	horaRegistro time constraint notNull_horaRegistro not null, 
+	constraint Fk_Historia_Historias_Clinicas_registra_Enfermedades foreign key (codHistoria ) references Historias_Clinicas (codHistoria),
+	constraint Fk_Enfermedad_Historias_Clinicas_registra_Enfermedades foreign key (idEnfermedad) references Enfermedades (idEnfermedad),
+	constraint Fk_Cita_Historias_Clinicas_registra_Enfermedades foreign key (idCita) references Citas (idCita),
+	constraint Pk_Historias_Clinicas_registra_Enfermedades primary key(codHistoria, idEnfermedad, idCita ) 
+);
+
+create table Citas_diagnostica_Enfermedades (
+	idCita integer,
+	idEnfermedad integer,
+	constraint Fk_Cita_Citas_diagnostica_Enfermedades foreign key (idCita) references Citas (idCita),
+	constraint Fk_Enfermedad_Citas_diagnostica_Enfermedades foreign key (idEnfermedad) references Enfermedades (idEnfermedad),
+	constraint Pk_Citas_diagnostica_Enfermedades primary key (idCita, idEnfermedad)
+);
+
+create table Citas_prescribe_Medicamentos (
+	idCita integer,
+	codMed integer,
+	codHistoria integer constraint notNull_historia not null,
+	dosis varchar(50) constraint notNull_dosis not null,
+	frecuencia varchar(50) constraint notNull_frecuencia not null,
+	fechaEmision date constraint notNull_fechaEmision not null,
+	duracion varchar(50) constraint notNull_duracion not null,
+	constraint Fk_Citas_Citas_prescribe_Medicamentos foreign key (idCita) references Citas (idCita),
+	constraint Fk_Medicamentos_Citas_prescribe_Medicamentos foreign key (codMed ) references Medicamentos (codMed ),
+	constraint Fk_Historia_Citas_prescribe_Medicamentos foreign key (codHistoria ) references Historias_Clinicas (codHistoria ),
+	constraint Pk_Citas_prescribe_Medicamentos primary key (idCita, codMed )
+);
+```
+
+## LO QUE NECESITO QUE HAGAS
+
+### 1. REVISAR Y CORREGIR CLASES DE CONFIGURACIÓN
+- **HybridDataSourceConfig**: Asegurar que los DataSources se crean correctamente
+- **HybridRoutingDataSource**: Validar que el routing funcione
+- **SedeContextHolder**: Verificar thread-safety
+- **HybridSedeInterceptor**: 
+  - Mejorar detección automática de tablas compartidas vs locales
+  - Agregar logging detallado
+  - Asegurar que setea el contexto ANTES de queries de Hibernate
+- **WebConfig**: Validar orden de interceptores
+
+### 2. CONFIGURACIÓN JPA ADICIONAL
+Agregar/corregir las configuraciones necesarias para:
+- EntityManagerFactory que use el routingDataSource
+- TransactionManager compatible con multi-datasource
+- Persistence Unit correctamente configurado
+
+### 3. REVISAR Y CORREGIR CONTROLADORES
+Analiza TODOS los controladores del proyecto y:
+- Identifica cuáles acceden a tablas COMPARTIDAS
+- Identifica cuáles acceden a tablas LOCALES
+- Identifica cuáles acceden a AMBAS (híbridos)
+- Asegura que los híbridos manejen el contexto correctamente
+- Agrega anotaciones o configuraciones necesarias
+
+Controladores principales:
+- **PacienteController** (COMPARTIDA - Pacientes)
+- **EmpleadoController** (LOCAL - Empleados, pero referencia Persona COMPARTIDA)
+- **CitaController** (LOCAL - Citas, pero referencia Pacientes COMPARTIDA)
+- **EquipamientoController** (LOCAL)
+- **DepartamentoController** (LOCAL)
+- **PersonaController** (COMPARTIDA)
+- **UsuarioController** (COMPARTIDA)
+- **EnfermedadController** (COMPARTIDA)
+- **MedicamentoController** (COMPARTIDA)
+- **HistoriaClinicaController** (COMPARTIDA + LOCAL híbrido)
+- **ReportController** (LOCAL)
+- **AuditoriaAccesoController** (COMPARTIDA)
+- **SedeController** (COMPARTIDA)
+- **HomeController** (Login - COMPARTIDA)
+
+### 4. REVISAR Y CORREGIR SERVICIOS
+Los servicios deben:
+- No requerir cambios idealmente (usar JpaRepository estándar)
+- Si necesitan lógica especial para routing, agrégala
+- Asegurar que las transacciones funcionen correctamente
+
+### 5. ACTUALIZAR ARCHIVOS JAVASCRIPT
+Revisa y corrige:
+- **api-helper.js**: Ya tiene fetchWithSede, validar que funcione
+- **Todos los .js de módulos** (pacientes.js, empleados.js, etc.):
+  - Cambiar `fetch()` por `fetchWithSede()`
+  - Asegurar que usen los headers correctos
+  - Validar manejo de errores
+
+Archivos JS principales:
+- api-helper.js
+- pacientes.js
+- empleados.js
+- equipamientos.js (equipamientos.js no existe pero debería existir lógica en la página)
+- personas.js (Personas.js existe)
+- enfermedades.js
+- auditoria.js
+- login.js (si existe)
+- dashboard.js (si existe)
+
+### 6. AGREGAR LOGGING Y DEBUGGING
+En todas las clases clave, agrega:
+- Logs informativos de qué DataSource se está usando
+- Logs de errores detallados
+- Mensajes útiles para debugging
+
+### 7. MANEJO DE CASOS ESPECIALES
+
+**Caso 1: Login**
+- Usuario se autentica (tabla COMPARTIDA)
+- Sistema determina su sede según su rol/departamento
+- Guarda idSede en sesión
+
+**Caso 2: Empleado referencia Persona**
+- Empleado está en BD LOCAL
+- Persona está en BD COMPARTIDA (via FDW)
+- La relación @ManyToOne debe funcionar
+
+**Caso 3: Cita referencia Paciente**
+- Cita está en BD LOCAL
+- Paciente está en BD COMPARTIDA (via FDW)
+- Debe funcionar sin cambios en código
+
+**Caso 4: Historia Clínica**
+- HistoriaClinica está en BD COMPARTIDA
+- HistoriaClinica_registra_diagnostica está en BD LOCAL
+- Operaciones que usan ambas deben manejar contexto
+
+### 8. CREAR CLASES ADICIONALES SI ES NECESARIO
+Si identificas que necesitas:
+- Aspect para routing automático
+- Service wrapper para operaciones híbridas
+- DTO especiales
+- Configuraciones adicionales
+
+Créalas y explica por qué son necesarias.
+
+## RESTRICCIONES
+
+- ✅ PUEDES modificar configuraciones Spring
+- ✅ PUEDES agregar anotaciones a entidades si es necesario
+- ✅ PUEDES crear nuevas clases helper/util
+- ✅ PUEDES modificar application.properties
+- ❌ NO cambiar estructura de tablas SQL
+- ❌ NO agregar dependencias nuevas (solo usar Spring Boot estándar)
+- ❌ NO cambiar lógica de negocio existente en controladores
+
+## ENTREGABLES ESPERADOS
+
+1. **Clases de Configuración Corregidas** (completas, funcionales, con comentarios)
+2. **Controladores Corregidos** (todos los que necesiten cambios)
+3. **Servicios Corregidos** (si es necesario)
+4. **Archivos JS Corregidos** (api-helper.js y todos los módulos)
+5. **Script SQL para FDW** (configuración Foreign Data Wrapper)
+6. **application.properties actualizado** (si necesita cambios adicionales)
+7. **Guía de Despliegue Paso a Paso**:
+   - Configuración de bases de datos
+   - Creación de FDW
+   - Orden de ejecución de scripts
+   - Testing de conectividad
+8. **Controller de Prueba** (TestRoutingController.java) que demuestre:
+   - Query a tabla COMPARTIDA
+   - Query a tabla LOCAL
+   - Query híbrida (join entre ambas)
+9. **Checklist de Validación**:
+   - [ ] Routing funciona para tablas compartidas
+   - [ ] Routing funciona para tablas locales
+   - [ ] FDW permite acceso transparente
+   - [ ] Login determina sede correctamente
+   - [ ] Frontend envía X-Sede-Id
+   - [ ] Logs muestran DataSource usado
+   - [ ] Transacciones funcionan
+   - [ ] No hay errores de conexión
+
+10. **Documento de Troubleshooting** con:
+    - Problemas comunes y soluciones
+    - Cómo verificar que el routing funciona
+    - Queries SQL de prueba
+    - Comandos para verificar conexiones
+
+## INFORMACIÓN ADICIONAL
+
+### Contexto del Login (HomeController.java)
+```java
+// Ya determina sede y la guarda en sesión
+Integer idSede = determinarSede(usuario);
+session.setAttribute("idSede", idSede);
+```
+
+### Frontend ya envía header (api-helper.js)
+```javascript
+headers: {
+    'Content-Type': 'application/json',
+    'X-Sede-Id': getSedeId() // Lee de localStorage
+}
+```
+
+### Interceptor ya registrado (WebConfig.java)
+```java
+registry.addInterceptor(sedeInterceptor)
+    .addPathPatterns("/api/**")
+    .excludePathPatterns("/api/login", "/api/logout");
+```
+
+## PRIORIDADES
+
+1. 🔴 **CRÍTICO**: Configuración de DataSources y Routing
+2. 🔴 **CRÍTICO**: Interceptor funcional con logging
+3. 🟡 **IMPORTANTE**: Controladores híbridos (Empleado, Cita, HistoriaClinica)
+4. 🟡 **IMPORTANTE**: JavaScript con fetchWithSede
+5. 🟢 **DESEABLE**: Testing y documentación completa
+
+## FORMATO DE RESPUESTA
+
+Por favor organiza tu respuesta así:
+
+### PARTE 1: ANÁLISIS DEL PROBLEMA
+- Identifica qué está mal en la configuración actual
+- Lista los controladores que necesitan cambios
+- Lista los archivos JS que necesitan cambios
+
+### PARTE 2: SOLUCIÓN - BACKEND
+- Clases de configuración corregidas (código completo)
+- Controladores corregidos (código completo)
+- Servicios corregidos (si
